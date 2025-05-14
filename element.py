@@ -74,30 +74,30 @@ class Element(ABC):
         return f"Element(id = {self.id}, type = {self.type}, node_ids: {self.node_ids})"
 
 class Segement(Element):
-    def __init__(self, id, nodes_ids: list, element_type = ElementType.Segment):
+    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Segment):
         super().__init__(id, element_type)
 
-        if nodes_ids.len() != 2:
+        if len(nodes_ids) != 2:
             raise TypeError("invalid number of nodes for a seg element")
 
         self.node_ids = nodes_ids
         self.neighbours = jnp.zeros(2, dtype = int)
 
 class Triangle(Element):
-    def __init__(self, id, nodes_ids: list, element_type = ElementType.Triangle):
+    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Triangle):
         super().__init__(id, element_type)
 
-        if nodes_ids.len() != 3:
+        if len(nodes_ids) != 3:
             raise TypeError("invalid number of nodes for a tri element")
 
         self.node_ids = nodes_ids
         self.neighbours = jnp.zeros(2, dtype = int)
 
 class Quadrilateral(Element):
-    def __init__(self, id, nodes_ids: list, element_type = ElementType.Quadrilateral):
+    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Quadrilateral):
         super().__init__(id, element_type)
 
-        if nodes_ids.len() != 4:
+        if len(nodes_ids) != 4:
             raise TypeError("invalid number of nodes for a quad element")
 
         self.node_ids = nodes_ids

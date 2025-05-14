@@ -4,6 +4,7 @@ from element import Element, ElementType
 def main():
     mesh = _simple_1d(2, 101)
     print(mesh.elements)
+    print(mesh.get_n_elements())
     mesh.plot()
 
 if __name__ == "__main__":
