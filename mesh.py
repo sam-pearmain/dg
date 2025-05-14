@@ -5,43 +5,45 @@ from element import Segement, Triangle, Quadrilateral, ElementType
 
 class Mesh():
     def __init__(self, nodes: jax.Array, connectivity: jax.Array):
-        self.nodes = nodes
-        self.connectivity = connectivity
+        self.nodes = jnp.asarray(nodes, dtype = jnp.float64)
+        self.connectivity = jnp.asarray(connectivity, dtype = jnp.int32)
         self.dimensions = nodes.shape[1]
 
-        self.elements = []
-
-    def get_n_nodes(self) -> int:
+    def n_nodes(self) -> int:
         return self.nodes.shape[0]
     
-    def get_n_elements(self) -> int:
+    def n_elements(self) -> int:
         return self.connectivity.shape[0]
-
-    def construct_elements(self):
-        if self.dimensions == 1:
-            for idx, connection in enumerate(self.connectivity):
-                self.elements.append(Segement(idx, connection))
-        elif self.dimensions == 2:
-            for idx, connection in enumerate(self.connectivity):
-                self.elements.append(
-                    Triangle(idx, connection) if connection.len() == 3 else Quadrilateral(idx, connection)
-                )
-        elif self.dimensions == 3:
-            raise NotImplementedError
-        else:
-            raise ValueError("invalid dimensions")
 
     def plot(self):
         fig = plt.figure()
         fig.show()
 
-# just a simple function to create a equally spaced 1D mesh
-def _simple_1d(length: float, n_nodes: int) -> Mesh:
+def simple_1d(length: float, n_nodes: int) -> Mesh:
     n_elements = n_nodes - 1
     nodes = jnp.linspace(0, length, n_nodes).reshape((n_nodes, 1))
     idx_col1 = jnp.arange(0, n_elements)
     idx_col2 = jnp.arange(1, n_elements + 1)
     connectivity = jnp.stack([idx_col1, idx_col2], axis = 1)
     mesh = Mesh(nodes, connectivity)
-    mesh.construct_elements()
+    return mesh
+
+def simple_2d_rect(length: float, height: float, nx: int, ny: int) -> Mesh:
+    x_coords = jnp.linspace(0, length, nx)
+    y_coords = jnp.linspace(0, height, ny)
+
+    xx, yy = jnp.meshgrid(x_coords, y_coords)
+    nodes = jnp.stack([xx.ravel(), yy.ravel()], axis = 1)
+
+    connectivity_list = []
+    for j in range(ny - 1):
+        for i in range(nx - 1):
+            n0 = j * nx + i # bottom left
+            n1 = j * nx + (i + 1) # bottom right
+            n2 = (j + 1) * nx + i # top left
+            n3 = (j + 1) * nx + (i + 1) # top right
+            connectivity_list.append([n0, n1, n2, n3])
+
+    connectivity = jnp.array(connectivity_list, dtype = int)
+    mesh = Mesh(nodes, connectivity)
     return mesh

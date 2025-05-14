@@ -1,11 +1,15 @@
-from mesh import Mesh, _simple_1d
+from mesh import Mesh, simple_1d, simple_2d_rect
 from element import Element, ElementType
 
 def main():
-    mesh = _simple_1d(2, 101)
-    print(mesh.elements)
-    print(mesh.get_n_elements())
-    mesh.plot()
+    mesh = simple_1d(2, 101)
+    mesh_2d = simple_2d_rect(1, 1, 10001, 10001)
+
+    print(mesh.connectivity)
+    print(mesh.n_elements())
+
+    print(mesh_2d.connectivity)
+    print(mesh_2d.n_elements())
 
 if __name__ == "__main__":
     main()
