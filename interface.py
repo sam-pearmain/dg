@@ -22,10 +22,3 @@ class BoundaryGroup():
 
     def allocate_boundary_faces(self):
         pass
-
-
-class Element():
-    def __init__(self, id = -1):
-        self.id = id
-        self.node_ids = jnp.zeros(0, dtype = int)
-        

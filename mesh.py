@@ -1,20 +1,24 @@
+import jax
 import jax.numpy as jnp
 import matplotlib as plt
 from element import Element, ElementType
 
 class Mesh():
-    def __init__(self, dimensions: int, n_nodes: int, e_type: ElementType):
-        self.dimensions = dimensions
-        self.nodes = jnp.zeros((n_nodes, dimensions), dtype = jnp.float64)
-        self.connectivity = jnp.zeros(())
+    def __init__(self, nodes: jax.Array, connectivity: jax.Array):
+        self.nodes = nodes
+        self.connectivity = connectivity
+        self.dimensions = nodes.shape[1]
         
         self.elements = []
-        self.element_type = e_type
 
     def get_n_nodes(self) -> int:
         return self.nodes.shape[0]
+    
+    def get_n_elements(self) -> int:
+        return self.connectivity.shape[0]
 
     def construct_elements(self):
+        ## this needs to be changed, should instead be supplied with connectivity and nodes and should construct the elements based off that information ##
         if self.dimensions == 1:
             for i in range(self.get_n_nodes() - 1):
                 node_indices = jnp.array([i, i + 1])

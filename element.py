@@ -23,7 +23,6 @@ class ElementType(Enum):
             ElementType.Quadrilateral: "quad",
             ElementType.Tetrahedra:    "tetra",
             ElementType.Hexahedra:     "hexa",
-            ElementType.Prismatic:     "pris",
         }
         return ELEMENT_REPR[self]
 
@@ -35,7 +34,6 @@ class ElementType(Enum):
             ElementType.Quadrilateral: 2,
             ElementType.Tetrahedra:    3,
             ElementType.Hexahedra:     3,
-            ElementType.Prismatic:     3,
         }
         return ELEMENT_DIMENSIONS[self]
 
@@ -47,11 +45,22 @@ class ElementType(Enum):
             ElementType.Quadrilateral: 4,
             ElementType.Tetrahedra:    4,
             ElementType.Hexahedra:     8,
-            ElementType.Prismatic:     6,
         }
         return ELEMENT_NODE_COUNT[self]
+    
+    def n_interfaces(self):
+        """Returns the number of interfaces corresponding to the given element"""
+        ELEMENT_INTERFACE_COUNT = {
+            ElementType.Segment:       2, 
+            ElementType.Triangle:      3,
+            ElementType.Quadrilateral: 4,
+            ElementType.Tetrahedra:    4,
+            ElementType.Hexahedra:     6,
+        }
+        return ELEMENT_INTERFACE_COUNT[self]
 
 class Element(ABC):
+    """The most fundemental finite element class"""
     def __init__(self, id: int, element_type: ElementType):
         self.id = id
         self.type = element_type
