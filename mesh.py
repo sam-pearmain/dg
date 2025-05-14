@@ -1,13 +1,13 @@
-import jax
-import jax.numpy as jnp
 import matplotlib as plt
+import jax.numpy as jnp
+from jax import Array
 from element import Segement, Triangle, Quadrilateral, ElementType
 
 class Mesh():
-    def __init__(self, nodes: jax.Array, connectivity: jax.Array):
-        self.nodes = jnp.asarray(nodes, dtype = jnp.float64)
-        self.connectivity = jnp.asarray(connectivity, dtype = jnp.int32)
-        self.dimensions = nodes.shape[1]
+    def __init__(self, nodes: Array, connectivity: Array):
+        self.nodes = jnp.array(nodes, dtype = jnp.float64)
+        self.connectivity = jnp.array(connectivity, dtype = jnp.int32)
+        self.dimensions: int = nodes.shape[1]
 
     def n_nodes(self) -> int:
         return self.nodes.shape[0]
@@ -15,15 +15,14 @@ class Mesh():
     def n_elements(self) -> int:
         return self.connectivity.shape[0]
 
-    def plot(self):
-        fig = plt.figure()
-        fig.show()
 
 def simple_1d(length: float, n_nodes: int) -> Mesh:
     n_elements = n_nodes - 1
     nodes = jnp.linspace(0, length, n_nodes).reshape((n_nodes, 1))
+
     idx_col1 = jnp.arange(0, n_elements)
     idx_col2 = jnp.arange(1, n_elements + 1)
+    
     connectivity = jnp.stack([idx_col1, idx_col2], axis = 1)
     mesh = Mesh(nodes, connectivity)
     return mesh
