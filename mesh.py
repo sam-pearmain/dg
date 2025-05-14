@@ -1,18 +1,22 @@
+import meshio
 import matplotlib as plt
 import jax.numpy as jnp
 from jax import Array
 from element import Segement, Triangle, Quadrilateral, ElementType
 
 class Mesh():
-    def __init__(self, nodes: Array, connectivity: Array):
-        self.nodes = jnp.array(nodes, dtype = jnp.float64)
-        self.connectivity = jnp.array(connectivity, dtype = jnp.int32)
-        self.dimensions: int = nodes.shape[1]
+    """A JAX initialisation of a mesh"""
+    def __init__(self, mesh: meshio.Mesh):
+        self.nodes      = jnp.array(mesh.points, dtype = jnp.float64)
+        self.elements   = jnp.array(mesh.cells, dtype = jnp.int32)
+        self.dimensions = self.nodes.shape[1]
 
     def n_nodes(self) -> int:
+        """Returns the number of nodes in the mesh"""
         return self.nodes.shape[0]
     
     def n_elements(self) -> int:
+        """Returns the number of elements in the mesh"""
         return self.connectivity.shape[0]
 
 
