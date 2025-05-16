@@ -103,7 +103,7 @@ class Quadrilateral(Element):
         self.node_ids = nodes_ids
         self.neighbours = jnp.zeros(2, dtype = int)
 
-ELEMENTS = {
+SUPPORTED_ELEMENTS = {
     "line":       ElementType.Line,
     "polygon":    ElementType.Quadrilateral,
     "triangle":   ElementType.Triangle,
