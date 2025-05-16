@@ -10,7 +10,7 @@ class Dimensions(Enum):
 
 class ElementType(Enum):
     """An enum encompassing the list of supported element types."""
-    Segment       = auto()
+    Line          = auto()
     Triangle      = auto()
     Quadrilateral = auto()
     Tetrahedra    = auto()
@@ -19,7 +19,7 @@ class ElementType(Enum):
 
     def __str__(self):
         ELEMENT_REPR = {
-            ElementType.Segment:       "seg", 
+            ElementType.Line:       "seg", 
             ElementType.Triangle:      "tri",
             ElementType.Quadrilateral: "quad",
             ElementType.Tetrahedra:    "tetra",
@@ -30,7 +30,7 @@ class ElementType(Enum):
     def dimensions(self):
         """Returns the number of dimensions for the given element."""
         ELEMENT_DIMENSIONS = {
-            ElementType.Segment:       1, 
+            ElementType.Line:       1, 
             ElementType.Triangle:      2,
             ElementType.Quadrilateral: 2,
             ElementType.Tetrahedra:    3,
@@ -41,7 +41,7 @@ class ElementType(Enum):
     def n_nodes(self):
         """Returns the number of nodes corresponding to the given element."""
         ELEMENT_NODE_COUNT = {
-            ElementType.Segment:       2, 
+            ElementType.Line:       2, 
             ElementType.Triangle:      3,
             ElementType.Quadrilateral: 4,
             ElementType.Tetrahedra:    4,
@@ -52,7 +52,7 @@ class ElementType(Enum):
     def n_interfaces(self):
         """Returns the number of interfaces corresponding to the given element"""
         ELEMENT_INTERFACE_COUNT = {
-            ElementType.Segment:       2, 
+            ElementType.Line:       2, 
             ElementType.Triangle:      3,
             ElementType.Quadrilateral: 4,
             ElementType.Tetrahedra:    4,
@@ -74,7 +74,7 @@ class Element(ABC):
         return f"Element(id = {self.id}, type = {self.type}, node_ids: {self.node_ids})"
 
 class Segement(Element):
-    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Segment):
+    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Line):
         super().__init__(id, element_type)
 
         if len(nodes_ids) != 2:
@@ -102,3 +102,12 @@ class Quadrilateral(Element):
 
         self.node_ids = nodes_ids
         self.neighbours = jnp.zeros(2, dtype = int)
+
+ELEMENTS = {
+    "line":       ElementType.Line,
+    "polygon":    ElementType.Quadrilateral,
+    "triangle":   ElementType.Triangle,
+    "quad":       ElementType.Quadrilateral,
+    "tetra":      ElementType.Tetrahedra,
+    "hexahedron": ElementType.Hexahedra,
+}
