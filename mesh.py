@@ -22,10 +22,11 @@ class Mesh():
             raise ValueError("jax mesh only supports single element-type meshes")
         
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
-        self.element_connectivity = jnp.asarray(
+        self.connectivity = jnp.asarray(
             jnp.concatenate([cell_block.data for cell_block in mesh.cells]),
             dtype = jnp.int32
         )
+
         self.element_type = SUPPORTED_ELEMENTS[element_types[0]]
         self.dimensions = self.element_type.dimensions()
 
