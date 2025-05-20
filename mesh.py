@@ -1,7 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
 from meshio import Mesh as MeshIOMesh
-from element import Segement, Triangle, Quadrilateral, ElementType, SUPPORTED_ELEMENTS
+from element import SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based mesh object"""
@@ -34,7 +34,7 @@ class Mesh():
         return cls(meshio_mesh)
 
     def write(self, filepath: str, file_format=None):
-        "Write the mesh to a given filepath using the meshio API"
+        """Writes the mesh to a given filepath using the meshio API"""
         cell_type = None
         for key, value in SUPPORTED_ELEMENTS.items():
             if value == self.element_type:
