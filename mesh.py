@@ -1,25 +1,13 @@
 import numpy as np
 import jax.numpy as jnp
 from meshio import Mesh as MeshIOMesh
-from meshio import CellBlock as MeshIOCellBlock
 from element import Segement, Triangle, Quadrilateral, ElementType, SUPPORTED_ELEMENTS
-
-class Block():
-    """A JAX-based representation of a block of elements"""
-    def __init__(self, cell_block: MeshIOCellBlock):
-        if cell_block.type not in SUPPORTED_ELEMENTS:
-            raise NotImplementedError(f"cell type: {cell_block.type} not supported")
-        self.element_type = SUPPORTED_ELEMENTS[cell_block.type]
-        self.data = jnp.asarray(cell_block.data)
-
-    def __len__(self):
-        return len(self.data)
 
 class Mesh():
     """A JAX-based mesh object"""
     def __init__(self, mesh: MeshIOMesh):
         element_types = {cell_block.type for cell_block in mesh.cells}
-        if element_types > 1:
+        if len(element_types) > 1:
             raise ValueError("jax mesh only supports single element-type meshes")
         
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
@@ -28,8 +16,14 @@ class Mesh():
             dtype = jnp.int32
         )
 
-        self.element_type = SUPPORTED_ELEMENTS[element_types[0]]
+        self.element_type = SUPPORTED_ELEMENTS[list(element_types)[0]]
         self.dimensions = self.element_type.dimensions()
+
+    @classmethod
+    def read(cls, filepath: str):
+        """Reads a mesh from a file using meshio and returns a Mesh object"""
+        meshio_mesh = MeshIOMesh.read(filepath)
+        return cls(meshio_mesh)
 
     def write(self, filepath: str, file_format=None):
         "Write the mesh to a given filepath using the meshio API"
@@ -47,5 +41,3 @@ class Mesh():
         
         meshio_mesh = MeshIOMesh(points, cells)
         meshio_mesh.write(filepath, file_format)
-        
-        
