@@ -1,6 +1,7 @@
+import numpy as np
+import jax.numpy as jnp
 from meshio import Mesh as MeshIOMesh
 from meshio import CellBlock as MeshIOCellBlock
-import jax.numpy as jnp
 from element import Segement, Triangle, Quadrilateral, ElementType, SUPPORTED_ELEMENTS
 
 class Block():
@@ -30,5 +31,20 @@ class Mesh():
         self.element_type = SUPPORTED_ELEMENTS[element_types[0]]
         self.dimensions = self.element_type.dimensions()
 
+    def write(self, filepath: str, file_format=None):
+        cell_type = None
+        for key, value in SUPPORTED_ELEMENTS.items():
+            if value == self.element_type:
+                cell_type = key
+                break 
+        
+        if cell_type is None:
+            raise ValueError(f"could not find a corresponding meshio cell type for {self.element_type}")
+        
+        points = np.asarray(self.nodes)
+        cells = [(cell_type, np.asarray(self.connectivity))]
+        
+        meshio_mesh = MeshIOMesh(points, cells)
+        meshio_mesh.write(filepath, file_format)
         
         
