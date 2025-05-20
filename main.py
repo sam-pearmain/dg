@@ -1,8 +1,12 @@
 from mesh import Mesh
+from element import ElementType
 
 def main():
-    mesh = Mesh.read("jax_mesh.vtk")
+    mesh = Mesh.read("structured-double-wedge.vtk", element_type = ElementType.Quadrilateral)
     print(mesh.nodes)
+    print(mesh.connectivity)
+    print(mesh.element_type)
+    mesh.write("wedge-test.vtk")
 
 def _jax_init():
     import jax

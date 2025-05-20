@@ -2,41 +2,37 @@ import numpy as np
 import jax.numpy as jnp
 import meshio
 from meshio import Mesh as MeshIOMesh
-from element import SUPPORTED_ELEMENTS
+from element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based mesh object"""
-    def __init__(self, mesh: MeshIOMesh):
+    def __init__(self, mesh: MeshIOMesh, element_type: ElementType):
         element_types = {cell_block.type for cell_block in mesh.cells}
 
         if not element_types:
             raise ValueError("input mesh has no defined elements")
-
-        if len(element_types) > 1:
-            raise ValueError("only single element-type meshes are supported")
-        
-        meshio_cell_type_str = list(element_types)[0]
-        
-        if meshio_cell_type_str not in SUPPORTED_ELEMENTS:
-            raise NotImplementedError(f"element type '{meshio_cell_type_str}' not supported")
-        
+                
         connectivity_arrays = []
         for cell_block in mesh.cells:
-            connectivity_arrays.append(jnp.asarray(cell_block.data, dtype = jnp.int32))
+            if cell_block.type in SUPPORTED_ELEMENTS:
+                if element_type == SUPPORTED_ELEMENTS[cell_block.type]:
+                    connectivity_arrays.append(
+                        jnp.asarray(cell_block.data, dtype = jnp.int32)
+                    )
 
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = jnp.asarray(
             jnp.concatenate(connectivity_arrays),
             dtype = jnp.int32
         )
-        self.element_type = SUPPORTED_ELEMENTS[meshio_cell_type_str]
+        self.element_type = element_type
         self.dimensions = self.element_type.dimensions()
 
     @classmethod
-    def read(cls, filepath: str):
+    def read(cls, filepath: str, element_type: ElementType, file_format: str = None):
         """Reads a mesh from a file using meshio and returns a Mesh object"""
-        meshio_mesh = meshio.read(filepath)
-        return cls(meshio_mesh)
+        meshio_mesh = meshio.read(filepath, file_format)
+        return cls(meshio_mesh, element_type)
 
     def write(self, filepath: str, file_format=None):
         """Writes the mesh to a given filepath using the meshio API"""
