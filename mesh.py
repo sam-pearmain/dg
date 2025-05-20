@@ -7,16 +7,24 @@ class Mesh():
     """A JAX-based mesh object"""
     def __init__(self, mesh: MeshIOMesh):
         element_types = {cell_block.type for cell_block in mesh.cells}
+
+        if not element_types:
+            raise ValueError("input mesh has no defined elements")
+
         if len(element_types) > 1:
-            raise ValueError("jax mesh only supports single element-type meshes")
+            raise ValueError("only single element-type meshes are supported")
+        
+        meshio_cell_type_str = list(element_types)[0]
+        
+        if meshio_cell_type_str not in SUPPORTED_ELEMENTS:
+            raise NotImplementedError(f"element type '{meshio_cell_type_str}' not supported")
         
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = jnp.asarray(
             jnp.concatenate([cell_block.data for cell_block in mesh.cells]),
             dtype = jnp.int32
         )
-
-        self.element_type = SUPPORTED_ELEMENTS[list(element_types)[0]]
+        self.element_type = SUPPORTED_ELEMENTS[meshio_cell_type_str]
         self.dimensions = self.element_type.dimensions()
 
     @classmethod
