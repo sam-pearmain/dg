@@ -2,14 +2,7 @@ from mesh import Mesh, simple_1d, simple_2d_rect
 from element import Element, ElementType
 
 def main():
-    mesh = simple_1d(2, 101)
-    mesh_2d = simple_2d_rect(1, 1, 101, 101)
-
-    print(mesh.connectivity)
-    print(mesh.n_elements())
-
-    print(mesh_2d.connectivity)
-    print(mesh_2d.n_elements())
+    pass
 
 def _jax_init():
     import jax

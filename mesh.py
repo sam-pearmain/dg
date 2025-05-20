@@ -32,6 +32,7 @@ class Mesh():
         self.dimensions = self.element_type.dimensions()
 
     def write(self, filepath: str, file_format=None):
+        "Write the mesh to a given filepath using the meshio API"
         cell_type = None
         for key, value in SUPPORTED_ELEMENTS.items():
             if value == self.element_type:
