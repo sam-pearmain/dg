@@ -1,5 +1,6 @@
 import numpy as np
 import jax.numpy as jnp
+import meshio
 from meshio import Mesh as MeshIOMesh
 from element import SUPPORTED_ELEMENTS
 
@@ -19,9 +20,13 @@ class Mesh():
         if meshio_cell_type_str not in SUPPORTED_ELEMENTS:
             raise NotImplementedError(f"element type '{meshio_cell_type_str}' not supported")
         
+        connectivity_arrays = []
+        for cell_block in mesh.cells:
+            connectivity_arrays.append(jnp.asarray(cell_block.data, dtype = jnp.int32))
+
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = jnp.asarray(
-            jnp.concatenate([cell_block.data for cell_block in mesh.cells]),
+            jnp.concatenate(connectivity_arrays),
             dtype = jnp.int32
         )
         self.element_type = SUPPORTED_ELEMENTS[meshio_cell_type_str]
@@ -30,7 +35,7 @@ class Mesh():
     @classmethod
     def read(cls, filepath: str):
         """Reads a mesh from a file using meshio and returns a Mesh object"""
-        meshio_mesh = MeshIOMesh.read(filepath)
+        meshio_mesh = meshio.read(filepath)
         return cls(meshio_mesh)
 
     def write(self, filepath: str, file_format=None):
