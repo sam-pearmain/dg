@@ -6,7 +6,13 @@ from element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based mesh object"""
-    def __init__(self, mesh: MeshIOMesh, element_type: ElementType):
+    def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
+        if isinstance(element_type, str):
+            try:
+                element_type = SUPPORTED_ELEMENTS[element_type]
+            except KeyError:
+                raise NotImplementedError(f"{element_type} not supported")
+        
         element_types = {cell_block.type for cell_block in mesh.cells}
 
         if not element_types:
@@ -29,12 +35,12 @@ class Mesh():
         self.dimensions = self.element_type.dimensions()
 
     @classmethod
-    def read(cls, filepath: str, element_type: ElementType, file_format: str = None):
+    def read(cls, filepath: str, element_type: ElementType | str, file_format: str = None):
         """Reads a mesh from a file using meshio and returns a Mesh object"""
         meshio_mesh = meshio.read(filepath, file_format)
         return cls(meshio_mesh, element_type)
 
-    def write(self, filepath: str, file_format=None):
+    def write(self, filepath: str, file_format = None):
         """Writes the mesh to a given filepath using the meshio API"""
         cell_type = None
         for key, value in SUPPORTED_ELEMENTS.items():
