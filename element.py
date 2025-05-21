@@ -19,44 +19,44 @@ class ElementType(Enum):
 
     def __str__(self):
         ELEMENT_REPR = {
-            ElementType.Line:       "seg", 
-            ElementType.Triangle:      "tri",
-            ElementType.Quadrilateral: "quad",
-            ElementType.Tetrahedra:    "tetra",
-            ElementType.Hexahedra:     "hexa",
+            self.Line:          "line", 
+            self.Triangle:      "tri",
+            self.Quadrilateral: "quad",
+            self.Tetrahedra:    "tetra",
+            self.Hexahedra:     "hexa",
         }
         return ELEMENT_REPR[self]
 
     def dimensions(self):
         """Returns the number of dimensions for the given element."""
         ELEMENT_DIMENSIONS = {
-            ElementType.Line:       1, 
-            ElementType.Triangle:      2,
-            ElementType.Quadrilateral: 2,
-            ElementType.Tetrahedra:    3,
-            ElementType.Hexahedra:     3,
+            self.Line:          1, 
+            self.Triangle:      2,
+            self.Quadrilateral: 2,
+            self.Tetrahedra:    3,
+            self.Hexahedra:     3,
         }
         return ELEMENT_DIMENSIONS[self]
 
     def n_nodes(self):
         """Returns the number of nodes corresponding to the given element."""
         ELEMENT_NODE_COUNT = {
-            ElementType.Line:       2, 
-            ElementType.Triangle:      3,
-            ElementType.Quadrilateral: 4,
-            ElementType.Tetrahedra:    4,
-            ElementType.Hexahedra:     8,
+            self.Line:          2, 
+            self.Triangle:      3,
+            self.Quadrilateral: 4,
+            self.Tetrahedra:    4,
+            self.Hexahedra:     8,
         }
         return ELEMENT_NODE_COUNT[self]
     
     def n_interfaces(self):
         """Returns the number of interfaces corresponding to the given element"""
         ELEMENT_INTERFACE_COUNT = {
-            ElementType.Line:       2, 
-            ElementType.Triangle:      3,
-            ElementType.Quadrilateral: 4,
-            ElementType.Tetrahedra:    4,
-            ElementType.Hexahedra:     6,
+            self.Line:       2, 
+            self.Triangle:      3,
+            self.Quadrilateral: 4,
+            self.Tetrahedra:    4,
+            self.Hexahedra:     6,
         }
         return ELEMENT_INTERFACE_COUNT[self]
 
@@ -73,7 +73,7 @@ class Element(ABC):
     def __repr__(self):
         return f"Element(id = {self.id}, type = {self.type}, node_ids: {self.node_ids})"
 
-class Segement(Element):
+class Line(Element):
     def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Line):
         super().__init__(id, element_type)
 
