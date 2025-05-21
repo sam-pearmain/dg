@@ -1,4 +1,4 @@
-from mesh import Mesh
+from meshing import Mesh
 
 def main():
     mesh = Mesh.read("structured-double-wedge.vtk", element_type = "quad")
