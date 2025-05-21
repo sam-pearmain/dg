@@ -10,13 +10,12 @@ def main():
 def _jax_init():
     import jax
 
-    jax.config.update("jax_enable_x64", True)
-
     try:
         tpu_devices = jax.devices("tpu")
         print(tpu_devices)
         if tpu_devices:
             jax.config.update("jax_platform_name", "tpu")
+            jax.config.update("jax_enable_x64", True)
             return
     except RuntimeError:
         pass
@@ -26,11 +25,13 @@ def _jax_init():
         print(gpu_devices)
         if gpu_devices:
             jax.config.update("jax_platform_name", "gpu")
+            jax.config.update("jax_enable_x64", True)
             return
     except RuntimeError:
         pass
 
     jax.config.update("jax_platform_name", "cpu")
+    jax.config.update("jax_enable_x64", True)
 
 if __name__ == "__main__":
     _jax_init()
