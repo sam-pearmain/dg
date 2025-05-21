@@ -1,0 +1,1 @@
+Can you keep comments to a minimum, code should be understandable without the verbose use of comments. Also try to give me pointers on what I should write/implement rather than just giving me the code upfront
