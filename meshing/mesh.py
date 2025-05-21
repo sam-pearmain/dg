@@ -2,7 +2,7 @@ import numpy as np
 import jax.numpy as jnp
 import meshio
 from meshio import Mesh as MeshIOMesh
-from element import ElementType, SUPPORTED_ELEMENTS
+from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based mesh object"""
