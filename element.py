@@ -60,49 +60,6 @@ class ElementType(Enum):
         }
         return ELEMENT_INTERFACE_COUNT[self]
 
-class Element(ABC):
-    """The most fundemental finite element class"""
-    def __init__(self, id: int, element_type: ElementType):
-        self.id = id
-        self.type = element_type
-        self.node_ids = jnp.zeros(element_type.n_nodes(), dtype = int)
-        
-        self.neighbours = []
-        self.interfaces = []
-
-    def __repr__(self):
-        return f"Element(id = {self.id}, type = {self.type}, node_ids: {self.node_ids})"
-
-class Line(Element):
-    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Line):
-        super().__init__(id, element_type)
-
-        if len(nodes_ids) != 2:
-            raise TypeError("invalid number of nodes for a seg element")
-
-        self.node_ids = nodes_ids
-        self.neighbours = jnp.zeros(2, dtype = int)
-
-class Triangle(Element):
-    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Triangle):
-        super().__init__(id, element_type)
-
-        if len(nodes_ids) != 3:
-            raise TypeError("invalid number of nodes for a tri element")
-
-        self.node_ids = nodes_ids
-        self.neighbours = jnp.zeros(2, dtype = int)
-
-class Quadrilateral(Element):
-    def __init__(self, id, nodes_ids: jax.Array, element_type = ElementType.Quadrilateral):
-        super().__init__(id, element_type)
-
-        if len(nodes_ids) != 4:
-            raise TypeError("invalid number of nodes for a quad element")
-
-        self.node_ids = nodes_ids
-        self.neighbours = jnp.zeros(2, dtype = int)
-
 SUPPORTED_ELEMENTS = {
     "line":       ElementType.Line,
     "polygon":    ElementType.Quadrilateral,
