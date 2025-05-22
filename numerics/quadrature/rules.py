@@ -1,8 +1,10 @@
 import jax 
 import jax.numpy as jnp
 import jax.lax as lax
+from jax import Array
+from jax.typing import ArrayLike
 
-def _legendre_poly_and_deriv_scalar(n: int, x: float):
+def _legendre_poly_and_deriv_scalar(n: int, x: ArrayLike) -> tuple[Array, Array]:
     x = jnp.asarray(x)
 
     p0 = jnp.array(1.0)
@@ -17,13 +19,13 @@ def _legendre_poly_and_deriv_scalar(n: int, x: float):
     if n == 1:
         return p1, dp1
     
-    def body(i, state):
+    def body(i: int, state: tuple[Array, Array, Array, Array]) -> tuple[Array, Array, Array, Array]:
         pn_minus_1, pn_minus_2, dpn_minus_1, dpn_minus_2 = state
 
-        pn = (
+        pn: Array = (
             (2.0 * i - 1.0) * x * pn_minus_1 - (i - 1.0) * pn_minus_2 
         ) / i
-        dpn = dpn_minus_2 + (2.0 * i - 1.0) * pn_minus_1
+        dpn: Array = dpn_minus_2 + (2.0 * i - 1.0) * pn_minus_1
 
         return pn, pn_minus_1, dpn, dpn_minus_1 
     
@@ -85,32 +87,9 @@ GAUSS_LEGENDRE_LINE_QUADRATURE_WEIGHTS = {
     n: gauss_legendre_points_weights(n)[1] for n in range(1, 20)
 }
 
+# test #
 if __name__ == "__main__":
-    def _jax_init():
-        import jax
-
-        try:
-            tpu_devices = jax.devices("tpu")
-            print(tpu_devices)
-            if tpu_devices:
-                jax.config.update("jax_platform_name", "tpu")
-                jax.config.update("jax_enable_x64", True)
-                return
-        except RuntimeError:
-            pass
-
-        try:
-            gpu_devices = jax.devices("gpu")
-            print(gpu_devices)
-            if gpu_devices:
-                jax.config.update("jax_platform_name", "gpu")
-                jax.config.update("jax_enable_x64", True)
-                return
-        except RuntimeError:
-            pass
-
-        jax.config.update("jax_platform_name", "cpu")
-        jax.config.update("jax_enable_x64", True)
+    from ...utils import _jax_init
 
     _jax_init()
 
