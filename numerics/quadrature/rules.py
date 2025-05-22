@@ -3,6 +3,9 @@ import jax.numpy as jnp
 import jax.lax as lax
 from jax import Array
 from jax.typing import ArrayLike
+from ...utils import _jax_init
+
+_jax_init()
 
 def _legendre_poly_and_deriv_scalar(n: int, x: ArrayLike) -> tuple[Array, Array]:
     x = jnp.asarray(x)
@@ -87,12 +90,7 @@ GAUSS_LEGENDRE_LINE_QUADRATURE_WEIGHTS = {
     n: gauss_legendre_points_weights(n)[1] for n in range(1, 20)
 }
 
-# test #
 if __name__ == "__main__":
-    from ...utils import _jax_init
-
-    _jax_init()
-
     for n, points in GAUSS_LEGENDRE_LINE_QUADRATURE_POINTS.items():
         weights = GAUSS_LEGENDRE_LINE_QUADRATURE_WEIGHTS[n]
         print(n, points, weights)
