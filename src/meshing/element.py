@@ -1,6 +1,4 @@
-from abc import ABC, abstractmethod
 from enum import Enum, auto
-import jax
 import jax.numpy as jnp
 
 class Dimensions(Enum):
