@@ -1,11 +1,18 @@
+from typing import Tuple, Sequence, Optional
 import numpy as np
 import jax.numpy as jnp
+from jax import Array
 import meshio
 from meshio import Mesh as MeshIOMesh
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based mesh object"""
+    nodes:        Array
+    connectivity: Array
+    element_type: ElementType
+    dimensions:   int
+
     def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
         if isinstance(element_type, str):
             try:
@@ -35,7 +42,7 @@ class Mesh():
         self.dimensions = self.element_type.dimensions()
 
     @classmethod
-    def read(cls, filepath: str, element_type: ElementType | str, file_format: str = None):
+    def read(cls, filepath: str, element_type: ElementType | str, file_format: Optional[str] = None):
         """Reads a mesh from a file using meshio and returns a Mesh object"""
         meshio_mesh = meshio.read(filepath, file_format)
         return cls(meshio_mesh, element_type)

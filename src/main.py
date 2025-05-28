@@ -1,6 +1,5 @@
 from meshing import Mesh
 from utils import _jax_init
-import numerics.quadrature.rules
 
 def main():
     mesh = Mesh.read("structured-double-wedge.vtk", element_type = "quad")
