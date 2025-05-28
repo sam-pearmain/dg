@@ -1,8 +1,8 @@
-import os
+import jax
 from meshing import Mesh
 
 def main():
-    print(f"JAX_PLATFORMS: {os.environ.get('JAX_PLATFORMS')}")
+    print(jax.config.read)
 
     mesh = Mesh.read("meshes/structured-double-wedge.vtk", element_type = "quad")
     print(mesh.nodes)
