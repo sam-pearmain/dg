@@ -1,5 +1,4 @@
 from meshing import Mesh
-from utils import _jax_init
 
 def main():
     mesh = Mesh.read("structured-double-wedge.vtk", element_type = "quad")
@@ -9,5 +8,4 @@ def main():
     mesh.write("wedge-test.vtk")
 
 if __name__ == "__main__":
-    _jax_init()
     main()
