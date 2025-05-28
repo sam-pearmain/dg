@@ -1,8 +1,9 @@
-from typing import Tuple, Sequence, Optional
-import numpy as np
 import jax.numpy as jnp
-from jax import Array
+import numpy as np
 import meshio
+
+from jax import Array
+from typing import Optional
 from meshio import Mesh as MeshIOMesh
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
@@ -39,7 +40,14 @@ class Mesh():
             dtype = jnp.int32
         )
         self.element_type = element_type
-        self.dimensions = self.element_type.dimensions()
+
+    def __repr__(self):        
+        return (
+            f"<Mesh object with {self.n_nodes} nodes, {self.n_elements} elements>\n"
+            f" - ElementType: {self.element_type}\n"
+            f" - Dimensions:  {self.dimensions}\n"
+            f" - Coordinate Span: {self.bounds}"
+        )
 
     @classmethod
     def read(cls, filepath: str, element_type: ElementType | str, file_format: Optional[str] = None):
@@ -63,3 +71,42 @@ class Mesh():
         
         meshio_mesh = MeshIOMesh(points, cells)
         meshio_mesh.write(filepath, file_format)
+
+    @property
+    def n_nodes(self) -> int:
+        """Returns the number of nodes within the mesh"""
+        return self.nodes.shape[0]
+    
+    @property
+    def n_elements(self) -> int:
+        """Returns the number of elements within the mesh"""
+        return self.connectivity.shape[0]
+    
+    @property
+    def dimensions(self) -> int:
+        """Returns the dimensions of the mesh"""
+        return self.element_type.dimensions()
+    
+    @property
+    def bounds(self):
+        """Returns the max/min dimensional bounds of the mesh"""
+        min_coords = jnp.min(self.nodes, axis = 0)
+        max_coords = jnp.max(self.nodes, axis = 0)
+
+        if self.dimensions == 1:
+            return (
+                (min_coords[0].item(), max_coords[0].item())
+            )
+        elif self.dimensions == 2:
+            return (
+                (min_coords[0].item(), max_coords[0].item()),
+                (min_coords[1].item(), max_coords[1].item())
+            )
+        elif self.dimensions == 3:
+            return (
+                (min_coords[0].item(), max_coords[0].item()),
+                (min_coords[1].item(), max_coords[1].item()),
+                (min_coords[2].item(), max_coords[2].item())
+            )
+        else:
+            raise ValueError("not sure if this will ever occur")
