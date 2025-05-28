@@ -12,7 +12,6 @@ class Mesh():
     nodes:        Array
     connectivity: Array
     element_type: ElementType
-    dimensions:   int
 
     def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
         if isinstance(element_type, str):
@@ -110,3 +109,4 @@ class Mesh():
             )
         else:
             raise ValueError("not sure if this will ever occur")
+        
