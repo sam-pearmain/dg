@@ -3,9 +3,6 @@ import jax.numpy as jnp
 import jax.lax as lax
 from jax import Array
 from jax.typing import ArrayLike
-from ...utils import _jax_init
-
-_jax_init()
 
 def _legendre_poly_and_deriv_scalar(n: int, x: ArrayLike) -> tuple[Array, Array]:
     x = jnp.asarray(x)

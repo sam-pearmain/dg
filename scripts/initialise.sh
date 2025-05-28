@@ -1,9 +1,7 @@
-if nvidia-smi -L > /dev/null 2>&1; then 
-    export JAX_PLATFORM_NAME="gpu"
-else 
-    export JAX_PLATFORM_NAME="cpu"
+if nvidia-smi -L > /dev/null 2>&1; then
+  export JAX_PLATFORMS="gpu"
+else
+  export JAX_PLATFORMS="cpu"
 fi
 
 export JAX_ENABLE_X64="true"
-
-echo "JAX_PLATFORM_NAME: $JAX_PLATFORM_NAME"
