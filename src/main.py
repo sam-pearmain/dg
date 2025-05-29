@@ -1,4 +1,3 @@
-import jax
 from meshing import Mesh
 
 def main():

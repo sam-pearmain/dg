@@ -8,7 +8,7 @@ from meshio import Mesh as MeshIOMesh
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
-    """A JAX-based mesh object"""
+    """A JAX-based geometric mesh object"""
     nodes:        Array
     connectivity: Array
     element_type: ElementType
