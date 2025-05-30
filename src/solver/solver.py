@@ -4,7 +4,7 @@ from typing import Union, Dict
 from physics import Physics
 from meshing import Mesh
 from logging import Logger
-from utils import todo, Uninit, isuninit
+from utils import *
 from numerics.timestepping.integrator import Integrator
 
 class SolverSettings():
@@ -55,13 +55,25 @@ class Solver():
 
     def initialise_solution(self):
         self.u = {}
+        mesh = self.mesh
         n_state_vars = self.physics.n_state_vars
 
-        if isuninit(self.mesh.element_order):
+        if isuninit(mesh.element_order):
             raise UninitError
 
         # initialise the solution to an array that has the same length as the amount of degrees of freedom
-        for order
+        for order, element_ids in mesh.element_order.items():
+            n_elements = element_ids.shape[0]
+
+            if n_elements == 0:
+                continue
+
+            n_dofs = mesh.element_type.n_dofs(order)
+            self.u[order] = jnp.zeros(
+                (n_elements, n_state_vars, n_dofs),
+                dtype = jnp.float64
+            )
+            
 
     def solve(self):
         integrator = self.integrator
