@@ -1,4 +1,6 @@
+import jax.numpy as jnp
 
+from typing import Union
 from physics import Physics
 from meshing import Mesh
 from logging import Logger
@@ -8,14 +10,17 @@ from numerics.timestepping.integrator import Integrator
 class SolverSettings():
     def __init__(
             self,
-            max_iters: int
+            max_iters: int, 
+            order: int,
         ):
         self.max_iters = max_iters
+        self.order = order
 
     @classmethod
     def default(self):
         return SolverSettings(
-            max_iters = 1000
+            max_iters = 100,
+            order = 1
         )
 
 class Solver():
@@ -25,6 +30,7 @@ class Solver():
     logger:     Logger
     mesh:       Mesh
     iter:       int
+    u:          Union[jnp.ndarray, Uninit]
 
     def __init__(
             self, 
@@ -41,10 +47,15 @@ class Solver():
         self.logger = logger
         self.mesh = mesh
         self.iter = iter
+        self.u = Uninit
     
     @classmethod
     def load_from_checkpoint(filepath: str):
         todo()
+
+    def initialise_solution(self):
+        # initialise the solution to an array that has the same length as the amount of degrees of freedom
+        pass
 
     def solve(self):
         integrator = self.integrator
