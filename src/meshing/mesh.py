@@ -3,18 +3,20 @@ import numpy as np
 import meshio
 
 from jax import Array
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from meshio import Mesh as MeshIOMesh
+from utils import todo, Uninit
 from meshing.interface import BoundaryType, SUPPORTED_BOUNDARIES
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based geometric mesh object"""
-    nodes:        Array
-    connectivity: Array
-    boundaries:   Dict[BoundaryType, Array]
-    groups:       Dict[str, Array]
-    element_type: ElementType
+    nodes:         Array
+    connectivity:  Array
+    boundaries:    Dict[BoundaryType, Array]
+    groups:        Dict[str, Array]
+    element_type:  ElementType
+    element_order: Union[Dict[int, Array], Uninit]
 
     def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
         if isinstance(element_type, str):
@@ -48,6 +50,7 @@ class Mesh():
             dtype = jnp.int32
         )
         self.element_type = element_type
+        self.element_order = Uninit
 
     def __repr__(self):        
         return (
@@ -79,6 +82,22 @@ class Mesh():
         
         meshio_mesh = MeshIOMesh(points, cells)
         meshio_mesh.write(filepath, file_format)
+
+    def initialise_element_order(self, order: int):
+        """Initialises the dict that stores the local order of each element, {order : elem_ids}"""
+        element_ids = jnp.arange(self.n_elements, dtype = jnp.int32)
+        self.element_order = {order : element_ids}
+
+    @property
+    def n_dofs(self) -> Optional[int]:
+        if isinstance(self.element_order, Uninit):
+            todo("how do we handle this, either return None or raise an error, idk")
+        
+        n_dofs = 0
+        for order, element_ids in self.element_order.items():
+            n_dofs += element_ids.shape[0] * self.element_type.n_dofs(order)
+            
+        return n_dofs
 
     @property
     def n_nodes(self) -> int:

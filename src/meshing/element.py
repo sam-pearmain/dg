@@ -13,7 +13,6 @@ class ElementType(Enum):
     Quadrilateral = auto()
     Tetrahedra    = auto()
     Hexahedra     = auto()
-    Prismatic     = auto()
 
     def __str__(self):
         ELEMENT_REPR = {
@@ -50,13 +49,24 @@ class ElementType(Enum):
     def n_interfaces(self):
         """Returns the number of interfaces corresponding to the given element"""
         ELEMENT_INTERFACE_COUNT = {
-            self.Line:       2, 
+            self.Line:          2, 
             self.Triangle:      3,
             self.Quadrilateral: 4,
             self.Tetrahedra:    4,
             self.Hexahedra:     6,
         }
         return ELEMENT_INTERFACE_COUNT[self]
+    
+    def n_dofs(self, order: int):
+        ELEMENT_DOF_FUNCTIONS = {
+            self.Line:          lambda p: (p + 1),
+            self.Triangle:      lambda p: (p + 1) * (p + 1) // 2,
+            self.Quadrilateral: lambda p: (p + 1)**2,
+            self.Tetrahedra:    lambda p: (p + 1) * (p + 2) * (p + 3) // 6,
+            self.Hexahedra:     lambda p: (p + 1)**3,
+        }
+        return ELEMENT_DOF_FUNCTIONS[self](order)
+
 
 SUPPORTED_ELEMENTS = {
     "line":       ElementType.Line,

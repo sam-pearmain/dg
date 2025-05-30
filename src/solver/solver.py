@@ -17,8 +17,8 @@ class SolverSettings():
         self.order = order
 
     @classmethod
-    def default(self):
-        return SolverSettings(
+    def default(cls):
+        return cls(
             max_iters = 100,
             order = 1
         )

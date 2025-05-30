@@ -1,3 +1,5 @@
+from typing import Any
+
 class Uninit:
     def __str__(self):
         return "<uninit>"
@@ -40,3 +42,7 @@ class Uninit:
 
     def _uninit():
         raise ValueError("attempted to use uninitialised value")
+    
+def isuninit(any: Any) -> bool:
+    """Just a wrapper for isinstance but to check if something is uninitialised"""
+    return isinstance(any, Uninit)
