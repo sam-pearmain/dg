@@ -1,5 +1,22 @@
-from abc import ABC, abstractmethod
 import jax.numpy as jnp
+
+from enum import Enum, auto
+from abc import ABC, abstractmethod
+
+class BoundaryType(Enum):
+    Wall = auto()
+    Farfield = auto()
+    VelocityInlet = auto()
+    PressureInlet = auto()
+    PressureOutlet = auto()
+
+SUPPORTED_BOUNDARIES = {
+    "wall": BoundaryType.Wall,
+    "farfield": BoundaryType.Farfield,
+    "vinlet": BoundaryType.VelocityInlet,
+    "pinlet": BoundaryType.PressureInlet,
+    "poutlet": BoundaryType.PressureOutlet,
+}
 
 class Interface(ABC):
     def __init__(self):

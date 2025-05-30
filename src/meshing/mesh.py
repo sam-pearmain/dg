@@ -3,14 +3,17 @@ import numpy as np
 import meshio
 
 from jax import Array
-from typing import Optional
+from typing import Optional, Dict
 from meshio import Mesh as MeshIOMesh
+from meshing.interface import BoundaryType, SUPPORTED_BOUNDARIES
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
 class Mesh():
     """A JAX-based geometric mesh object"""
     nodes:        Array
     connectivity: Array
+    boundaries:   Dict[BoundaryType, Array]
+    groups:       Dict[str, Array]
     element_type: ElementType
 
     def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
@@ -25,6 +28,8 @@ class Mesh():
         if not element_types:
             raise ValueError("input mesh has no defined elements")
                 
+        self.boundaries = {}
+
         connectivity_arrays = []
         for cell_block in mesh.cells:
             if cell_block.type in SUPPORTED_ELEMENTS:
@@ -32,6 +37,10 @@ class Mesh():
                     connectivity_arrays.append(
                         jnp.asarray(cell_block.data, dtype = jnp.int32)
                     )
+                    
+            if cell_block.tags in SUPPORTED_BOUNDARIES:
+                boundary_type = SUPPORTED_BOUNDARIES[cell_block.tags]
+                self.boundaries[boundary_type] = jnp.asarray(set(cell_block.data))
 
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = jnp.asarray(
