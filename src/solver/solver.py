@@ -1,10 +1,10 @@
 import jax.numpy as jnp
 
-from typing import Union
+from typing import Union, Dict
 from physics import Physics
 from meshing import Mesh
 from logging import Logger
-from utils import todo, Uninit
+from utils import todo, Uninit, isuninit
 from numerics.timestepping.integrator import Integrator
 
 class SolverSettings():
@@ -30,10 +30,10 @@ class Solver():
     logger:     Logger
     mesh:       Mesh
     iter:       int
-    u:          Union[jnp.ndarray, Uninit]
+    u:          Union[Dict[int, jnp.ndarray], Uninit]
 
     def __init__(
-            self, 
+            self,
             settings: SolverSettings,
             integrator: Integrator,
             physics: Physics,
@@ -54,8 +54,14 @@ class Solver():
         todo()
 
     def initialise_solution(self):
+        self.u = {}
+        n_state_vars = self.physics.n_state_vars
+
+        if isuninit(self.mesh.element_order):
+            raise UninitError
+
         # initialise the solution to an array that has the same length as the amount of degrees of freedom
-        pass
+        for order
 
     def solve(self):
         integrator = self.integrator

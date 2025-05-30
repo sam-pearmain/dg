@@ -41,7 +41,7 @@ class Uninit:
         self.uninit()
 
     def _uninit():
-        raise ValueError("attempted to use uninitialised value")
+        raise ValueError("attempted to use uninitialised object/value")
     
 def isuninit(any: Any) -> bool:
     """Just a wrapper for isinstance but to check if something is uninitialised"""

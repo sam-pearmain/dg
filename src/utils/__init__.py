@@ -1,2 +1,2 @@
-from .uninit import Uninit
+from .uninit import Uninit, isuninit
 from .todo import todo

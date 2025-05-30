@@ -1,2 +1,4 @@
+from .error import TodoError
+
 def todo(str: str):
-    raise NotImplementedError(str)
+    raise TodoError(str)
