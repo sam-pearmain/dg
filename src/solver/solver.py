@@ -88,6 +88,8 @@ class Solver():
             # increment the number of iterations
             self.iter += 1
 
+    def compute_spatial_residual(self):
+        physics = self.physics
 
     @property
     def time_step(self):
