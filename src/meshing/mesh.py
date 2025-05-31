@@ -79,7 +79,7 @@ class Mesh():
         self.element_type = element_type
         self.element_order = Uninit
 
-    def __repr__(self):        
+    def __repr__(self):
         return (
             f"<Mesh object with {self.n_nodes} nodes, {self.n_elements} elements>\n"
             f" - ElementType: {self.element_type}\n"
