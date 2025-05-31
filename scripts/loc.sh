@@ -1,0 +1,1 @@
+find ./src -name "*.py" -print0 | xargs -0 wc -l | grep -v "total$" | awk '{total += $1} END {print total " total lines"}'
