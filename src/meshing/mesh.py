@@ -5,9 +5,10 @@ import meshio
 from jax import Array
 from numpy.typing import ArrayLike
 from typing import Optional, Dict, Union
+from warnings import warn    
 from meshio import Mesh as MeshIOMesh
 from utils import todo, Uninit
-from meshing.interface import BoundaryType, SUPPORTED_BOUNDARIES
+from meshing.boundary import SUPPORTED_BOUNDARY_IDS
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
 class ElementConnectivity:
@@ -19,7 +20,25 @@ class ElementConnectivity:
     def cull_non_boundary_faces(self, boundary_entity_ids: ArrayLike) -> Array:
         """This function takes the array storing all the boundary entity 
         ids and deletes those which are undefined, i.e., id = -1."""
-        pass
+        ids = jnp.asarray(boundary_entity_ids, dtype = jnp.int32)
+        allowed = jnp.asarray(SUPPORTED_BOUNDARY_IDS.keys(), dtype = jnp.int32)
+        
+        # create the boolean mask (not -1 & is in supported boundary ids)
+        mask = (ids != -1) & jnp.isin(ids, allowed)
+        
+        # warn if we encounter unsupported boundaries (not -1, but not supported)
+        bad = jnp.unique(ids[(ids != -1) & ~jnp.isin(ids, allowed)])
+        for b in bad:
+            warn(f"unsupported boundary id {int(b)}, skipping")
+
+        kept_faces = self.boundary_faces[mask]
+        kept_ids   = ids[mask]
+
+        if kept_faces.shape[0] != kept_ids.shape[0]:
+            raise ValueError("boundary faces and boundary ids mismatch after cull")
+        
+        self.boundary_faces = kept_faces
+        return kept_ids
 
 class Mesh():
     """A JAX-based geometric mesh object."""
