@@ -3,22 +3,32 @@ import numpy as np
 import meshio
 
 from jax import Array
+from numpy.typing import ArrayLike
 from typing import Optional, Dict, Union
 from meshio import Mesh as MeshIOMesh
 from utils import todo, Uninit
 from meshing.interface import BoundaryType, SUPPORTED_BOUNDARIES
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
+class ElementConnectivity:
+    """Element connectivities stored in JAX arrays."""
+    def __init__(self, elements: Array, boundary_faces: Array):
+        self.elements = elements
+        self.boundary_faces = boundary_faces
+
+    def cull_non_boundary_faces(self, boundary_entity_ids: ArrayLike) -> Array:
+        """This function takes the array storing all the boundary entity 
+        ids and deletes those which are undefined, i.e., id = -1."""
+        pass
+
 class Mesh():
-    """A JAX-based geometric mesh object"""
+    """A JAX-based geometric mesh object."""
     # todo: perhaps we want to have this be aa generic class with both 
     # hp-adaptive meshes and static meshes built on top 
-    nodes:         Array
-    connectivity:  Array
-    boundaries:    Dict[BoundaryType, Array]
-    groups:        Dict[str, Array]
-    element_type:  ElementType
-    element_order: Union[Dict[int, Array], Uninit]
+    nodes:        Array
+    connectivity: ElementConnectivity
+    element_type: ElementType
+    approx_order: Union[Dict[int, Array], Uninit]
 
     def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
         if isinstance(element_type, str):
@@ -34,25 +44,19 @@ class Mesh():
                 
         self.boundaries = {}
 
-        connectivity_arrays = []
-        for cell_block in mesh.cells:
+        for i, cell_block in enumerate(mesh.cells):
             if cell_block.type in SUPPORTED_ELEMENTS:
                 if element_type == SUPPORTED_ELEMENTS[cell_block.type]:
-                    connectivity_arrays.append(
-                        jnp.asarray(cell_block.data, dtype = jnp.int32)
-                    )
+                    elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
 
                 if element_type.face_type == SUPPORTED_ELEMENTS[cell_block.type]:
-                    # since the boundaries will always be defined by the face type
-                    # for our chosen mesh element
-                    pass
-                    
+                    faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
+            
+            if cell_block.type == element_type.face_type:
+                boundary_entity_ids = mesh.cell_data["CellEntityIds"][i]
 
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
-        self.connectivity = jnp.asarray(
-            jnp.concatenate(connectivity_arrays),
-            dtype = jnp.int32
-        )
+        self.connectivity = ElementConnectivity(elements, faces)
         self.element_type = element_type
         self.element_order = Uninit
 

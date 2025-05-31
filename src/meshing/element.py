@@ -88,9 +88,10 @@ class ElementType(Enum):
 
 SUPPORTED_ELEMENTS = {
     "point":      ElementType.Point,
+    "vertex":     ElementType.Point,
     "line":       ElementType.Line,
-    "polygon":    ElementType.Quadrilateral,
     "triangle":   ElementType.Triangle,
+    "polygon":    ElementType.Quadrilateral,
     "quad":       ElementType.Quadrilateral,
     "tetra":      ElementType.Tetrahedra,
     "hexahedron": ElementType.Hexahedra,
