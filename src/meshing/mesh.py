@@ -41,10 +41,12 @@ class Mesh():
                     connectivity_arrays.append(
                         jnp.asarray(cell_block.data, dtype = jnp.int32)
                     )
+
+                if element_type.face_type == SUPPORTED_ELEMENTS[cell_block.type]:
+                    # since the boundaries will always be defined by the face type
+                    # for our chosen mesh element
+                    pass
                     
-            if cell_block.tags in SUPPORTED_BOUNDARIES:
-                boundary_type = SUPPORTED_BOUNDARIES[cell_block.tags]
-                self.boundaries[boundary_type] = jnp.asarray(set(cell_block.data))
 
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = jnp.asarray(
