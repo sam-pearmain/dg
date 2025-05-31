@@ -1,3 +1,5 @@
+import jax.numpy as jnp 
+
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -10,8 +12,11 @@ class Physics(ABC):
     class StateVariables(Enum):
         pass
 
-    @abstractmethod
-    class AdditionalVariables(Enum):
-        pass
+    @property
+    def n_state_vars(self):
+        """Returns the number of state vars of the system"""
+        len(self.StateVariables)
 
-    
+    def initial_condition(self, x):
+        """Returns the initial conditions at a given coordinate"""
+        return jnp.zeros(self.n_state_vars)

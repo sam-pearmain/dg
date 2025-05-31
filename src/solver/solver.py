@@ -51,7 +51,7 @@ class Solver():
     
     @classmethod
     def load_from_checkpoint(filepath: str):
-        todo()
+        todo("need also a method to write solution to a checkpoint file")
 
     def initialise_solution(self):
         self.u = {}
@@ -73,7 +73,6 @@ class Solver():
                 (n_elements, n_state_vars, n_dofs),
                 dtype = jnp.float64
             )
-            
 
     def solve(self):
         integrator = self.integrator
