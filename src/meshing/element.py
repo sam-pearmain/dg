@@ -1,11 +1,6 @@
 from typing import Optional
 from enum import Enum, auto
 
-class Dimensions(Enum):
-    One   = auto()
-    Two   = auto()
-    Three = auto()
-
 class ElementType(Enum):
     """An enum encompassing the list of supported element types."""
     Point         = auto()
