@@ -1,2 +1,3 @@
 Can you keep comments to a minimum, code should be understandable without the verbose use of comments. Also try to give me pointers on what I should write/implement rather than just giving me the code upfront.
-The ultimate goal of this project is to write a discontinuous Galerkin solver using the JAX python library for its powerful parallelism, jax.numpy API, and automatic differentiation capability.
+The ultimate goal of this project is to write a discontinuous Galerkin solver using the JAX python library for its powerful parallelism, jax.numpy API, and automatic differentiation capability. 
+When declaring variables I want their names to be descriptive, try to avoid single letters unless we are specifically referencing equations.

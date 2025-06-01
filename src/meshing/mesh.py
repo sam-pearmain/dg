@@ -11,13 +11,24 @@ from utils import todo, Uninit, MeshReadError
 from meshing.boundary import SUPPORTED_BOUNDARY_IDS
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
+class ElementData:
+    """Element data stored in JAX arrays. Element are each assigned integer values
+    to indicate whether they are boundary/interior elements alongside additional info"""
+    element_data:  Array
+    boundary_data: Array
+
 class ElementConnectivity:
     """Element connectivities stored in JAX arrays."""
-    def __init__(self, elements: Array, boundary_faces: Array):
-        self.elements = elements
-        self.boundary_faces = boundary_faces
+    elements: Array
+    boundary: Union[Array, Uninit]
+    faces: Union[None, Array]
 
-    def cull_non_boundary_faces(self, boundary_entity_ids: ArrayLike) -> Array:
+    def __init__(self, elements: Array, faces: Array):
+        self.elements = elements
+        self.boundary = Uninit
+        self.faces = faces
+
+    def assemble_boundary(self, boundary_entity_ids: ArrayLike) -> Array:
         """This function takes the array storing all the boundary entity 
         ids and deletes those which are undefined, i.e., id = -1."""
         ids = jnp.asarray(boundary_entity_ids, dtype = jnp.int32).reshape(-1)
@@ -31,18 +42,22 @@ class ElementConnectivity:
         for b in bad:
             warn(f"unsupported boundary id {int(b)}, skipping")
 
-        kept_faces = self.boundary_faces[mask]
-        kept_ids   = ids[mask]
+        boundary = self.faces[mask]
+        boundary_ids = ids[mask]
 
-        if kept_faces.shape[0] != kept_ids.shape[0]:
+        if boundary.shape[0] != boundary_ids.shape[0]:
             raise ValueError("boundary faces and boundary ids mismatch after cull")
         
-        self.boundary_faces = kept_faces
-        return kept_ids
+        self.boundary = boundary
+        return boundary_ids
     
     @property
     def n_elements(self) -> int:
         return self.elements.shape[0]
+    
+    @property
+    def n_boundary_elements(self) -> int:
+        return self.boundary.shape[0]
 
 class Mesh():
     """A JAX-based geometric mesh object."""
@@ -51,7 +66,7 @@ class Mesh():
     nodes:        Array
     connectivity: ElementConnectivity
     element_type: ElementType
-    approx_order: Union[Dict[int, Array], Uninit]
+    element_order: Union[Dict[int, Array], Uninit]
 
     def __init__(self, mesh: MeshIOMesh, element_type: Union[str, ElementType]):
         if isinstance(element_type, str):
@@ -74,7 +89,7 @@ class Mesh():
             
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = ElementConnectivity(elements, faces)
-        self.boundary_ids = self.connectivity.cull_non_boundary_faces(face_entity_ids)
+        self.boundary_ids = self.connectivity.assemble_boundary(face_entity_ids)
         self.element_type = element_type
         self.element_order = Uninit
 
@@ -101,7 +116,10 @@ class Mesh():
         meshio_mesh = MeshIOMesh(points, cells)
         meshio_mesh.write(filepath, file_format)
 
-    def initialise_element_order(self, order: int):
+    def _assemble_elements(self, cell_blocks, cell_data):
+        pass
+
+    def _initialise_element_order(self, order: int):
         """Initialises the dict that stores the local order of each element, {order : elem_ids}"""
         element_ids = jnp.arange(self.n_elements, dtype = jnp.int32)
         self.element_order = {order : element_ids}
