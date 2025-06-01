@@ -53,28 +53,23 @@ class Mesh():
     element_type: ElementType
     approx_order: Union[Dict[int, Array], Uninit]
 
-    def __init__(self, mesh: MeshIOMesh, element_type: ElementType | str):
+    def __init__(self, mesh: MeshIOMesh, element_type: Union[str, ElementType]):
         if isinstance(element_type, str):
-            try:
-                element_type = SUPPORTED_ELEMENTS[element_type]
-            except KeyError:
-                raise NotImplementedError(f"{element_type} not supported")
+            element_type = ElementType.from_str(element_type)
         
-        element_types = {cell_block.type for cell_block in mesh.cells}
-
-        if not element_types:
+        if not mesh.cells:
             raise ValueError("input mesh has no defined elements")
                 
         for i, cell_block in enumerate(mesh.cells):
             if cell_block.type in SUPPORTED_ELEMENTS:
-                if element_type.face_type == SUPPORTED_ELEMENTS[cell_block.type]:
+                if element_type.face_type == ElementType.from_str(cell_block.type):
                     faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
                     try:
                         face_entity_ids = mesh.cell_data["CellEntityIds"][i]
                     except:
                         raise MeshReadError("mesh appears to have no boundary faces")
 
-                if element_type == SUPPORTED_ELEMENTS[cell_block.type]:
+                if element_type == ElementType.from_str(cell_block.type):
                     elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
             
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
@@ -92,7 +87,7 @@ class Mesh():
         )
 
     @classmethod
-    def read(cls, filepath: str, element_type: ElementType | str, file_format: Optional[str] = None):
+    def read(cls, filepath: str, element_type: Union[str, ElementType], file_format: Optional[str] = None):
         """Reads a mesh from a file using meshio and returns a Mesh object"""
         meshio_mesh = meshio.read(filepath, file_format)
         return cls(meshio_mesh, element_type)
