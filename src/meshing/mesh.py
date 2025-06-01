@@ -94,15 +94,7 @@ class Mesh():
 
     def write(self, filepath: str, file_format = None):
         """Writes the mesh to a given filepath using the meshio API"""
-        cell_type = None
-        for key, value in SUPPORTED_ELEMENTS.items():
-            if value == self.element_type:
-                cell_type = key
-                break 
-        
-        if cell_type is None:
-            raise ValueError(f"could not find a corresponding meshio cell type for {self.element_type}")
-        
+        cell_type = self.element_type.as_meshio_str()
         points = np.asarray(self.nodes)
         cells = [(cell_type, np.asarray(self.connectivity.elements))]
         

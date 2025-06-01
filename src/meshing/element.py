@@ -32,6 +32,7 @@ class ElementType(Enum):
     
     @classmethod
     def from_str(cls, s: str) -> 'ElementType':
+        """Returns the corresponding ElementType for the given input string"""
         if s not in SUPPORTED_ELEMENTS:
             raise NotImplementedError(f"'{s}' elements not supported")
         return {
@@ -47,9 +48,11 @@ class ElementType(Enum):
         
     @staticmethod
     def is_supported(s: str) -> bool:
+        """Just a quick static method to check whether a given str is a supported element type"""
         return True if s in SUPPORTED_ELEMENTS else False
 
-    def as_str(self) -> str:
+    def as_meshio_str(self) -> str:
+        """Returns the meshio str representation for the given element"""
         return str(self)
 
     @property
