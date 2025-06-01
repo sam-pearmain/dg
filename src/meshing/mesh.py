@@ -7,7 +7,7 @@ from numpy.typing import ArrayLike
 from typing import Optional, Dict, Union
 from warnings import warn    
 from meshio import Mesh as MeshIOMesh
-from utils import todo, Uninit
+from utils import todo, Uninit, MeshReadError
 from meshing.boundary import SUPPORTED_BOUNDARY_IDS
 from meshing.element import ElementType, SUPPORTED_ELEMENTS
 
@@ -67,13 +67,14 @@ class Mesh():
             if cell_block.type in SUPPORTED_ELEMENTS:
                 if element_type.face_type == SUPPORTED_ELEMENTS[cell_block.type]:
                     faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
+                    try:
+                        boundary_entity_ids = mesh.cell_data["CellEntityIds"][i]
+                    except:
+                        raise MeshReadError("mesh appears to have no boundary faces")
 
                 if element_type == SUPPORTED_ELEMENTS[cell_block.type]:
                     elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
             
-            if cell_block.type == element_type.face_type:
-                boundary_entity_ids = mesh.cell_data["CellEntityIds"][i]
-
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = ElementConnectivity(elements, faces)
         self.boundary_ids = self.connectivity.cull_non_boundary_faces(boundary_entity_ids)

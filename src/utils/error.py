@@ -15,3 +15,9 @@ class TodoError(Error):
     def __init__(self, message: Optional[str]):
         self.message = "feature not yet implemented" if message is None else message
         super().__init__(self.message)
+
+class MeshReadError(Error):
+    """An error arrising when reading in a faulty mesh"""
+    def __init__(self, message: Optional[str]):
+        self.message = "faulty mesh detected" if message is None else message
+        super().__init__(self.message)
