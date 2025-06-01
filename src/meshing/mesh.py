@@ -65,17 +65,18 @@ class Mesh():
 
         for i, cell_block in enumerate(mesh.cells):
             if cell_block.type in SUPPORTED_ELEMENTS:
-                if element_type == SUPPORTED_ELEMENTS[cell_block.type]:
-                    elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
-
                 if element_type.face_type == SUPPORTED_ELEMENTS[cell_block.type]:
                     faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
+
+                if element_type == SUPPORTED_ELEMENTS[cell_block.type]:
+                    elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
             
             if cell_block.type == element_type.face_type:
                 boundary_entity_ids = mesh.cell_data["CellEntityIds"][i]
 
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = ElementConnectivity(elements, faces)
+        self.boundary_ids = self.connectivity.cull_non_boundary_faces(boundary_entity_ids)
         self.element_type = element_type
         self.element_order = Uninit
 
