@@ -3,54 +3,52 @@ import numpy as np
 import meshio
 
 from jax import Array
-from numpy.typing import ArrayLike
 from typing import Optional, Dict, Union
 from warnings import warn    
 from meshio import Mesh as MeshIOMesh
-from utils import todo, Uninit, MeshReadError
+from utils import todo, isuninit, Uninit, MeshError, MeshReadError
 from meshing.boundary import SUPPORTED_BOUNDARY_IDS
-from meshing.element import ElementType, SUPPORTED_ELEMENTS
+from meshing.element import ElementType
 
-class ElementData:
-    """Element data stored in JAX arrays. Element are each assigned integer values
+class ElementInfo:
+    """Element info stored in JAX arrays. Element are each assigned integer values
     to indicate whether they are boundary/interior elements alongside additional info"""
-    element_data:  Array
-    boundary_data: Array
+    boundary_info: Array # this cannot be optional as we must define how we treat our boundary elems
+    elements_info: Optional[Array]
+
+    def __init__(self, boundary_info: Array, elements_info: Optional[Array] = None):
+        if boundary_info is None:
+            raise MeshReadError("no specified boundary data, check the mesh")
+        self.elements_info = elements_info
+        self.boundary_info = boundary_info
+
+    def has_element_info(self) -> bool:
+        return False if self.elements_info is None else True
+
+    def boundary_info_len(self):
+        self.boundary_info.shape[0]
+
+    @property
+    def elements_info_len(self) -> int:
+        return 0 if self.elements_info is None else self.elements_info.shape[0]
+
 
 class ElementConnectivity:
     """Element connectivities stored in JAX arrays."""
     elements: Array
-    boundary: Union[Array, Uninit]
-    faces: Union[None, Array]
+    boundary: Array
 
-    def __init__(self, elements: Array, faces: Array):
+    def __init__(self, elements: Array, boundary: Array):
         self.elements = elements
-        self.boundary = Uninit
-        self.faces = faces
-
-    def assemble_boundary(self, boundary_entity_ids: ArrayLike) -> Array:
-        """This function takes the array storing all the boundary entity 
-        ids and deletes those which are undefined, i.e., id = -1."""
-        ids = jnp.asarray(boundary_entity_ids, dtype = jnp.int32).reshape(-1)
-        allowed = jnp.asarray(list(SUPPORTED_BOUNDARY_IDS.keys()), dtype = jnp.int32)
-        
-        # create the boolean mask (not -1 & is in supported boundary ids)
-        mask = (ids != -1) & jnp.isin(ids, allowed)
-        
-        # warn if we encounter unsupported boundaries (not -1, but not supported)
-        bad = jnp.unique(ids[(ids != -1) & ~jnp.isin(ids, allowed)])
-        for b in bad:
-            warn(f"unsupported boundary id {int(b)}, skipping")
-
-        boundary = self.faces[mask]
-        boundary_ids = ids[mask]
-
-        if boundary.shape[0] != boundary_ids.shape[0]:
-            raise ValueError("boundary faces and boundary ids mismatch after cull")
-        
         self.boundary = boundary
-        return boundary_ids
-    
+
+    def __repr__(self):
+        return (
+            f"<ElementConnectivity>\n"
+            f" - {self.n_elements} elements\n"
+            f" - {self.n_boundary_elements} boundary elements"    
+        )
+
     @property
     def n_elements(self) -> int:
         return self.elements.shape[0]
@@ -65,6 +63,7 @@ class Mesh():
     # hp-adaptive meshes and static meshes built on top 
     nodes:        Array
     connectivity: ElementConnectivity
+    element_info: ElementInfo
     element_type: ElementType
     element_order: Union[Dict[int, Array], Uninit]
 
@@ -75,23 +74,16 @@ class Mesh():
         if not mesh.cells:
             raise ValueError("input mesh has no defined elements")
                 
-        for i, cell_block in enumerate(mesh.cells):
-            if cell_block.type in SUPPORTED_ELEMENTS:
-                if element_type.face_type == ElementType.from_str(cell_block.type):
-                    faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
-                    try:
-                        face_entity_ids = mesh.cell_data["CellEntityIds"][i]
-                    except:
-                        raise MeshReadError("mesh appears to have no boundary faces")
-
-                if element_type == ElementType.from_str(cell_block.type):
-                    elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
-            
+        elems, faces, elem_info, face_info = self._deconstruct_meshio_mesh(mesh)
+        connectivity, element_info = self._assemble_elements(elems, faces, elem_info, face_info)
+        
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
-        self.connectivity = ElementConnectivity(elements, faces)
-        self.boundary_ids = self.connectivity.assemble_boundary(face_entity_ids)
+        self.connectivity = connectivity
+        self.element_info = element_info
         self.element_type = element_type
         self.element_order = Uninit
+
+        self._sanity_check()
 
     def __repr__(self):
         return (
@@ -116,17 +108,84 @@ class Mesh():
         meshio_mesh = MeshIOMesh(points, cells)
         meshio_mesh.write(filepath, file_format)
 
-    def _assemble_elements(self, cell_blocks, cell_data):
-        pass
+    def _deconstruct_meshio_mesh(self, meshio_mesh: MeshIOMesh) -> tuple[Array, Array, Optional[Array], Array]:
+        for i, cell_block in enumerate(meshio_mesh.cells):
+            if cell_block.type == self.element_type.as_meshio_str():
+                elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
+                elems_idx = i
+
+            if cell_block.type == self.element_type.face_type.as_meshio_str():
+                faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
+                faces_idx = i
+
+        try:
+            raw_elements_info = meshio_mesh.cell_data["CellEntityIds"][elems_idx]
+            raw_face_info = meshio_mesh.cell_data["CellEntityIds"][faces_idx]
+        except:
+            raise MeshReadError("mesh appears to have no boundary data, update mesh and tag boundaries")
+
+        elements_info = jnp.asarray(raw_elements_info, dtype = jnp.int32).reshape(-1)
+        face_info = jnp.asarray(raw_face_info, dtype = jnp.int32).reshape(-1)
+
+        if bool(jnp.all(elements_info == -1)):
+            elements_info = None
+        if bool(jnp.all(face_info == -1)):
+            raise MeshReadError("boundary faces are unassigned, unknown boundary, check mesh")
+
+        return elements, faces, elements_info, face_info
+
+    def _assemble_elements(
+            self, elements: Array, faces: Array, 
+            elem_info: Optional[Array], face_info: Array
+        ) -> tuple[ElementConnectivity, ElementInfo]:
+        """Assembles the connectivity and element info classes, deleting faces 
+        which do not comprise of the boundary in the process"""
+        allowed_tags = jnp.asarray(list(SUPPORTED_BOUNDARY_IDS.keys()), dtype = jnp.int32)
+        mask = (face_info != -1) & jnp.isin(face_info, allowed_tags)
+        
+        # extract the boundary
+        boundary = faces[mask]
+        boundary_info = face_info[mask]
+
+        invalid_tags = sorted(
+            set(face_info.tolist()) - 
+            set(allowed_tags.tolist()) - 
+            {-1}
+        )
+        if invalid_tags:
+            warn(f"ignoring unsupported boundary id/s {invalid_tags}")
+
+        connectivity = ElementConnectivity(elements, boundary)
+        element_info = ElementInfo(boundary_info, elem_info)
+
+        return connectivity, element_info
 
     def _initialise_element_order(self, order: int):
         """Initialises the dict that stores the local order of each element, {order : elem_ids}"""
         element_ids = jnp.arange(self.n_elements, dtype = jnp.int32)
         self.element_order = {order : element_ids}
 
+    def _sanity_check(self):
+        """Perform a sanity check on the mesh"""
+        min_ref = self.connectivity.elements.min()
+        max_ref = self.connectivity.elements.max()
+        if min_ref < 0 or max_ref >= self.n_nodes:
+            raise MeshError(
+                f"element connectivity index out of range: "
+                f"found refs [{min_ref},{max_ref}], valid [0,{self.n_nodes - 1}]"
+            )
+        
+        n_boundary_faces = self.connectivity.n_boundary_elements
+        n_boundary_tags = self.element_info.boundary_info_len()
+        if n_boundary_faces != n_boundary_tags:
+            raise MeshError(
+                f"boundary faces ({n_boundary_faces}) and boundary tags ({n_boundary_tags}) mismatch"
+            )
+
     @property
     def n_dofs(self) -> Optional[int]:
-        if isinstance(self.element_order, Uninit):
+        """Return the number of degrees of freedom in the mesh"""
+        if isuninit(self.element_order):
             todo("how do we handle this, either return None or raise an error, idk")
         
         n_dofs = 0
