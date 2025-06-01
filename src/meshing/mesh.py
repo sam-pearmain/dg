@@ -25,8 +25,8 @@ class ElementInfo:
     def has_element_info(self) -> bool:
         return False if self.elements_info is None else True
 
-    def boundary_info_len(self):
-        self.boundary_info.shape[0]
+    def boundary_info_len(self) -> int:
+        return self.boundary_info.shape[0]
 
     @property
     def elements_info_len(self) -> int:
@@ -71,6 +71,8 @@ class Mesh():
         if isinstance(element_type, str):
             element_type = ElementType.from_str(element_type)
         
+        self.element_type = element_type
+
         if not mesh.cells:
             raise ValueError("input mesh has no defined elements")
                 
@@ -80,7 +82,6 @@ class Mesh():
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = connectivity
         self.element_info = element_info
-        self.element_type = element_type
         self.element_order = Uninit
 
         self._sanity_check()
