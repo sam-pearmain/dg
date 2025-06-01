@@ -20,8 +20,8 @@ class ElementConnectivity:
     def cull_non_boundary_faces(self, boundary_entity_ids: ArrayLike) -> Array:
         """This function takes the array storing all the boundary entity 
         ids and deletes those which are undefined, i.e., id = -1."""
-        ids = jnp.asarray(boundary_entity_ids, dtype = jnp.int32)
-        allowed = jnp.asarray(SUPPORTED_BOUNDARY_IDS.keys(), dtype = jnp.int32)
+        ids = jnp.asarray(boundary_entity_ids, dtype = jnp.int32).reshape(-1)
+        allowed = jnp.asarray(list(SUPPORTED_BOUNDARY_IDS.keys()), dtype = jnp.int32)
         
         # create the boolean mask (not -1 & is in supported boundary ids)
         mask = (ids != -1) & jnp.isin(ids, allowed)
@@ -39,6 +39,10 @@ class ElementConnectivity:
         
         self.boundary_faces = kept_faces
         return kept_ids
+    
+    @property
+    def n_elements(self) -> int:
+        return self.elements.shape[0]
 
 class Mesh():
     """A JAX-based geometric mesh object."""
@@ -61,14 +65,12 @@ class Mesh():
         if not element_types:
             raise ValueError("input mesh has no defined elements")
                 
-        self.boundaries = {}
-
         for i, cell_block in enumerate(mesh.cells):
             if cell_block.type in SUPPORTED_ELEMENTS:
                 if element_type.face_type == SUPPORTED_ELEMENTS[cell_block.type]:
                     faces = jnp.asarray(cell_block.data, dtype = jnp.int32)
                     try:
-                        boundary_entity_ids = mesh.cell_data["CellEntityIds"][i]
+                        face_entity_ids = mesh.cell_data["CellEntityIds"][i]
                     except:
                         raise MeshReadError("mesh appears to have no boundary faces")
 
@@ -77,7 +79,7 @@ class Mesh():
             
         self.nodes = jnp.asarray(mesh.points, dtype = jnp.float64)
         self.connectivity = ElementConnectivity(elements, faces)
-        self.boundary_ids = self.connectivity.cull_non_boundary_faces(boundary_entity_ids)
+        self.boundary_ids = self.connectivity.cull_non_boundary_faces(face_entity_ids)
         self.element_type = element_type
         self.element_order = Uninit
 
@@ -107,7 +109,7 @@ class Mesh():
             raise ValueError(f"could not find a corresponding meshio cell type for {self.element_type}")
         
         points = np.asarray(self.nodes)
-        cells = [(cell_type, np.asarray(self.connectivity))]
+        cells = [(cell_type, np.asarray(self.connectivity.elements))]
         
         meshio_mesh = MeshIOMesh(points, cells)
         meshio_mesh.write(filepath, file_format)
@@ -136,12 +138,12 @@ class Mesh():
     @property
     def n_elements(self) -> int:
         """Returns the number of elements within the mesh"""
-        return self.connectivity.shape[0]
+        return self.connectivity.n_elements
     
     @property
     def dimensions(self) -> int:
         """Returns the dimensions of the mesh"""
-        return self.element_type.dimensions()
+        return self.element_type.dimensions
     
     @property
     def bounds(self):
