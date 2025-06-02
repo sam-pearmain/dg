@@ -23,13 +23,15 @@ class ElementInfo:
         self.boundary_info = boundary_info
 
     def has_element_info(self) -> bool:
+        """Whether the mesh stores internal element info, this is something to be expanded upon"""
         return False if self.elements_info is None else True
 
     def boundary_info_len(self) -> int:
+        """The length of the boundary info array, i.e., how many boundary elements have assigned info"""
         return self.boundary_info.shape[0]
 
-    @property
     def elements_info_len(self) -> int:
+        """The length of the internal info array"""
         return 0 if self.elements_info is None else self.elements_info.shape[0]
 
 
@@ -51,10 +53,12 @@ class ElementConnectivity:
 
     @property
     def n_elements(self) -> int:
+        """The number of internal elements"""
         return self.elements.shape[0]
     
     @property
     def n_boundary_elements(self) -> int:
+        """The number of boundary elements"""
         return self.boundary.shape[0]
 
 class Mesh():
@@ -110,6 +114,7 @@ class Mesh():
         meshio_mesh.write(filepath, file_format)
 
     def _deconstruct_meshio_mesh(self, meshio_mesh: MeshIOMesh) -> tuple[Array, Array, Optional[Array], Array]:
+        """Deconstructs the meshio mesh into what we need for our mesh representation"""
         for i, cell_block in enumerate(meshio_mesh.cells):
             if cell_block.type == self.element_type.as_meshio_str():
                 elements = jnp.asarray(cell_block.data, dtype = jnp.int32)
@@ -205,6 +210,11 @@ class Mesh():
         """Returns the number of elements within the mesh"""
         return self.connectivity.n_elements
     
+    @property
+    def boundary_element_type(self) -> ElementType:
+        """Returns the type of boundary elements"""
+        return self.element_type.face_type
+
     @property
     def dimensions(self) -> int:
         """Returns the dimensions of the mesh"""
