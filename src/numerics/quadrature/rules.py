@@ -18,6 +18,8 @@ def gauss_lobatto_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array]
         case ElementType.Tetrahedra:    raise NotSupportedError("lobatto quadrature not supported for tetrahedra")
 
 def gauss_legendre_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array]:
+    """Computes the Gauss-Legendre points and weights for a given reference element. These are 
+    precomputed at the beginning of the solver and remain unchanged throughout the entire computation"""
     todo("so maybe this is best in a seperate module i'm not sure")
     match ref_elem:
         case ElementType.Vertex:        return (jnp.asarray([0.0]), jnp.asarray([0.0]))
@@ -26,6 +28,8 @@ def gauss_legendre_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array
         case ElementType.Hexahedra:     return _gauss_legendre_ref_cube(order)
         case ElementType.Triangle:      raise NotSupportedError("gauss-legendre quadrature not supported for triangles")
         case ElementType.Tetrahedra:    raise NotSupportedError("gauss-legendre quadrature not supported for tetrahedra")
+
+# - below is just helper functions -
 
 def _gauss_lobatto_ref_line(order: int) -> tuple[Array, Array]:
     """Computes Gauss-Lobatto points and weights for a reference line element"""
