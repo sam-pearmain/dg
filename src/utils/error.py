@@ -18,6 +18,12 @@ class TodoError(Error):
         self.message = "feature not yet implemented" if message is None else message
         super().__init__(self.message)
 
+class NotSupportedError(Error):
+    """An error arrising when something isn't supported"""
+    def __init__(self, message: Optional[str]):
+        self.message = "feature not supported" if message is None else message
+        super().__init__(self.message)
+
 # -- mesh errors -- 
 
 class MeshError(Error):

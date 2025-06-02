@@ -103,7 +103,6 @@ class ElementType(Enum):
             self.Hexahedra:     self.Quadrilateral,
         }[self]
     
-    @property
     def n_dofs(self, order: int) -> int:
         """Returns the number of degrees of freedom for a given element and its polynomial approximation order"""
         return {
