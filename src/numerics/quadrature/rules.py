@@ -2,9 +2,33 @@ import numpy as np
 import jax.numpy as jnp
 
 from jax import Array
+from enum import Enum, auto
 from utils import todo
 from utils.error import *
 from meshing.element import ElementType
+
+class QuadratureType(Enum):
+    GaussLobatto = auto()
+    GaussLegendre = auto()
+
+    def is_supported_on(self, ref_elem: ElementType) -> bool:
+        """Check whether the given quadrature type is supported on a given reference element"""
+        match self:
+            case QuadratureType.GaussLobatto: 
+                return ref_elem in (
+                    ElementType.Vertex, 
+                    ElementType.Line, 
+                    ElementType.Quadrilateral, 
+                    ElementType.Hexahedra,
+                )
+            case QuadratureType.GaussLegendre:
+                return ref_elem in (
+                    ElementType.Vertex, 
+                    ElementType.Line, 
+                    ElementType.Quadrilateral, 
+                    ElementType.Hexahedra,
+                )
+            case _: return False
 
 def gauss_lobatto_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array]:
     """Computes the Gauss-Lobatto points and weights for a given reference element. These are 

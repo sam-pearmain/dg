@@ -74,7 +74,7 @@ class Solver():
                 dtype = jnp.float64
             )
 
-    def solve(self):
+    def run(self):
         integrator = self.integrator
 
         while self.iter < self.settings.max_iters:
