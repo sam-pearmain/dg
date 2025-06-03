@@ -11,6 +11,11 @@ class QuadratureType(Enum):
     GaussLobatto = auto()
     GaussLegendre = auto()
 
+    def __str__(self):
+        match self:
+            case QuadratureType.GaussLobatto:  return "gauss-lobatto"
+            case QuadratureType.GaussLegendre: return "gause-legendre" 
+
     def is_supported_on(self, ref_elem: ElementType) -> bool:
         """Check whether the given quadrature type is supported on a given reference element"""
         match self:
@@ -29,6 +34,9 @@ class QuadratureType(Enum):
                     ElementType.Hexahedra,
                 )
             case _: return False
+
+    def is_not_supported_on(self, ref_elem: ElementType) -> bool:
+        return not self.is_supported_on(ref_elem)
 
 def gauss_lobatto_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array]:
     """Computes the Gauss-Lobatto points and weights for a given reference element. These are 
