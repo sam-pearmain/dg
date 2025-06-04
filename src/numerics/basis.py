@@ -78,7 +78,8 @@ def eval_lagrange_basis(ref_elem: ElementType, x_q: Array) -> Array:
 
 # - helpers -
 
-def _construct_1d_lagrange_poly(x_n: Array) -> n
+def _construct_1d_lagrange_poly(x_n: Array) -> Array:
+    pass
 
 def _eval_lagrange_ref_line(x: Array) -> Array:
     pass

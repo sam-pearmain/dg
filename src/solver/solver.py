@@ -1,11 +1,11 @@
 import jax.numpy as jnp
 
 from typing import Union, Dict
-from physics import Physics
-from meshing import Mesh
 from logging import Logger
-from utils import *
-from numerics.timestepping.integrator import Integrator
+from src.physics import Physics
+from src.meshing import Mesh
+from src.utils import *
+from src.numerics.timestepping.integrator import Integrator
 
 class SolverSettings():
     def __init__(
