@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from jax import Array
 from meshing.element import ElementType
 from numerics.quadrature import QuadratureType
 from numerics.quadrature.rules import gauss_lobatto_rule, gauss_legendre_rule
@@ -9,14 +10,23 @@ class BasisType(Enum):
     Lagrange = auto()
     Legendre = auto()
 
-def compute_lagrange_basis(ref_elem: ElementType, order: int, quadrature_type: QuadratureType) -> idk:
-    if quadrature_type.is_not_supported_on(ref_elem):
-        raise NotSupportedError(f"{quadrature_type} not supported on {ref_elem}")
-    
-    match quadrature_type:
-        case QuadratureType.GaussLobatto:
-            quad_nodes, quad_weights = gauss_lobatto_rule(ref_elem, order)
-            n_dofs = quad_nodes.shape[0]
-        case QuadratureType.GaussLegendre:
-            quad_nodes, quad_weights = gauss_legendre_rule(ref_elem, order)
-            n_dofs = quad_nodes.shape[0]
+def eval_lagrange_basis(ref_elem: ElementType, x_q: Array) -> Array:
+    """Evaluate the Lagrange basis function across a given reference element at points x_q, typically the quadrature points"""
+    match ref_elem:
+        case ElementType.Vertex:        return 0
+        case ElementType.Line:          return _eval_lagrange_ref_line(x_q)
+        case ElementType.Quadrilateral: return _eval_lagrange_ref_quad(x_q)
+        case ElementType.Hexahedra:     return _eval_lagrange_ref_cube(x_q)
+        case ElementType.Triangle:      raise NotImplementedError
+        case ElementType.Tetrahedra:    raise NotImplementedError
+
+# - helpers -
+
+def _eval_lagrange_ref_line(x: Array) -> Array:
+    pass
+
+def _eval_lagrange_ref_quad(x: Array) -> Array:
+    pass
+
+def _eval_lagrange_ref_cube(x: Array) -> Array:
+    pass
