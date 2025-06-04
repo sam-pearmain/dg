@@ -1,5 +1,6 @@
 from typing import Optional
 from enum import Enum, auto
+from utils import todo
 
 SUPPORTED_ELEMENTS = [
     "point", "vertex", 
@@ -70,6 +71,7 @@ class ElementType(Enum):
     @property
     def n_nodes(self) -> int:
         """Returns the number of nodes corresponding to the given element."""
+        todo("this should be n_vertices, nodes refer to the interpolating nodes")
         return {
             self.Vertex:        1,
             self.Line:          2, 
