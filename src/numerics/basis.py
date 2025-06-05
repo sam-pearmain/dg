@@ -9,7 +9,7 @@ from utils import todo, NotSupportedError
 
 class BasisType(Enum):
     Lagrange = auto()
-    Legendre = auto()            
+    Legendre = auto()
 
 class RefElem(Enum):
     """A reference element enum"""
