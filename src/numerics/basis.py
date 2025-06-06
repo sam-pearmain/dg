@@ -9,7 +9,6 @@ from utils import todo, NotSupportedError
 
 class BasisType(Enum):
     Lagrange = auto()
-    Legendre = auto()
 
 class RefElem(Enum):
     """A reference element enum"""
@@ -29,6 +28,27 @@ class RefElem(Enum):
             case self.Cube:  return ((-1.0, -1.0, -1.0), (1.0, 1.0, 1.0))
             case self.Tri:   return ((0.0, 0.0), (1.0, 1.0))
             case self.Tetra: return ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
+
+    def vertices(self) -> tuple[tuple[float, ...], ...]:
+        match self:
+            case self.Point: 
+                return ((0.0),)
+            case self.Line:  
+                return ((-1.0, 1.0))
+            case self.Quad:  
+                return (
+                    (-1.0, -1.0), ( 1.0, -1.0), 
+                    ( 1.0,  1.0), (-1.0,  1.0),
+                )
+            case self.Cube:  
+                return (
+                    (-1.0, -1.0, -1.0), ( 1.0, -1.0, -1.0),
+                    ( 1.0,  1.0, -1.0), (-1.0,  1.0, -1.0),
+                    (-1.0, -1.0,  1.0), ( 1.0, -1.0,  1.0),
+                    ( 1.0,  1.0,  1.0), (-1.0,  1.0,  1.0),
+                )
+            case self.Tri:   raise NotImplementedError
+            case self.Tetra: raise NotImplementedError
 
     def dimensions(self) -> int:
         """Returns the number of dimensions for the given reference element"""
