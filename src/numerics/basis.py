@@ -30,6 +30,7 @@ class RefElem(Enum):
             case self.Tetra: return ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
 
     def vertices(self) -> tuple[tuple[float, ...], ...]:
+        """Returns the coordinates for each of the vertices of the reference element"""
         match self:
             case self.Point: 
                 return ((0.0),)
