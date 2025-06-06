@@ -13,6 +13,8 @@ SUPPORTED_ELEMENTS = [
 
 class ElementType(Enum):
     """An enum encompassing the list of supported element types."""
+    # todo: Currently these are only linear elements, need to consider whether to support 
+    # higher order elements as well, i.e. curvilinear meshes
     Vertex        = auto()
     Line          = auto()
     Triangle      = auto()

@@ -64,7 +64,7 @@ class ElementConnectivity:
 class Mesh():
     """A JAX-based geometric mesh object."""
     # todo: perhaps we want to have this be aa generic class with both 
-    # hp-adaptive meshes and static meshes built on top 
+    # hp-adaptive meshes and static meshes built on top
     nodes:        Array
     connectivity: ElementConnectivity
     element_info: ElementInfo
