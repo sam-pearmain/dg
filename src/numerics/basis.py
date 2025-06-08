@@ -73,18 +73,23 @@ class RefElem(Enum):
 
     def get_quadrature_points_weights(self, quadrature_type: QuadratureType) -> tuple[Array, Array]:
         match self:
-            case _: raise todo("finish this")
+            case self.Point: return
+            case self.Line:  return 
+            case self.Quad:  return 
+            case self.Cube:  return
+            case self.Tri:   return 
+            case self.Tetra: return 
 
     def get_interpolation_points(self, order: int, method: str) -> Array:
         pass
 
-    def get_equispaced_points(self, order: int) -> Array:
+    def _get_equispaced_points(self, order: int) -> Array:
         pass
 
-    def get_gauss_lobatto_points(self, order: int) -> Array:
+    def _get_gauss_lobatto_points(self, order: int) -> Array:
         pass
 
-    def get_gauss_legendre_points(self, order: int) -> Array:
+    def _get_gauss_legendre_points(self, order: int) -> Array:
         pass
 
 def eval_lagrange_basis(ref_elem: RefElem, x_q: Array) -> Array:

@@ -5,7 +5,7 @@ from jax import Array
 from enum import Enum, auto
 from utils import todo
 from utils.error import *
-from meshing.element import ElementType
+from numerics.basis import RefElem
 
 class QuadratureType(Enum):
     GaussLobatto = auto()
@@ -16,50 +16,50 @@ class QuadratureType(Enum):
             case QuadratureType.GaussLobatto:  return "gauss-lobatto"
             case QuadratureType.GaussLegendre: return "gause-legendre" 
 
-    def is_supported_on(self, ref_elem: ElementType) -> bool:
+    def is_supported_on(self, ref_elem: RefElem) -> bool:
         """Check whether the given quadrature type is supported on a given reference element"""
         match self:
             case QuadratureType.GaussLobatto: 
                 return ref_elem in (
-                    ElementType.Vertex, 
-                    ElementType.Line, 
-                    ElementType.Quadrilateral, 
-                    ElementType.Hexahedra,
+                    RefElem.Point, 
+                    RefElem.Line, 
+                    RefElem.Quad, 
+                    RefElem.Cube,
                 )
             case QuadratureType.GaussLegendre:
                 return ref_elem in (
-                    ElementType.Vertex, 
-                    ElementType.Line, 
-                    ElementType.Quadrilateral, 
-                    ElementType.Hexahedra,
+                    RefElem.Point, 
+                    RefElem.Line, 
+                    RefElem.Quad, 
+                    RefElem.Cube,
                 )
             case _: return False
 
-    def is_not_supported_on(self, ref_elem: ElementType) -> bool:
+    def is_not_supported_on(self, ref_elem: RefElem) -> bool:
         return not self.is_supported_on(ref_elem)
 
-def gauss_lobatto_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array]:
+def gauss_lobatto_rule(ref_elem: RefElem, order: int) -> tuple[Array, Array]:
     """Computes the Gauss-Lobatto points and weights for a given reference element. These are 
     precomputed at the beginning of the solver and remain unchanged throughout the entire computation"""
     match ref_elem:
-        case ElementType.Vertex:        return (jnp.asarray([0.0]), jnp.asarray([0.0]))
-        case ElementType.Line:          return _gauss_lobatto_ref_line(order)
-        case ElementType.Quadrilateral: return _gauss_lobatto_ref_quad(order)
-        case ElementType.Hexahedra:     return _gauss_lobatto_ref_cube(order)
-        case ElementType.Triangle:      raise NotSupportedError("lobatto quadrature not supported for triangles")
-        case ElementType.Tetrahedra:    raise NotSupportedError("lobatto quadrature not supported for tetrahedra")
+        case RefElem.Point: return (jnp.asarray([0.0]), jnp.asarray([0.0]))
+        case RefElem.Line:  return _gauss_lobatto_ref_line(order)
+        case RefElem.Quad:  return _gauss_lobatto_ref_quad(order)
+        case RefElem.Cube:  return _gauss_lobatto_ref_cube(order)
+        case RefElem.Tri:   raise NotSupportedError("lobatto quadrature not supported for triangles")
+        case RefElem.Tetra: raise NotSupportedError("lobatto quadrature not supported for tetrahedrons")
 
-def gauss_legendre_rule(ref_elem: ElementType, order: int) -> tuple[Array, Array]:
+def gauss_legendre_rule(ref_elem: RefElem, order: int) -> tuple[Array, Array]:
     """Computes the Gauss-Legendre points and weights for a given reference element. These are 
     precomputed at the beginning of the solver and remain unchanged throughout the entire computation"""
     todo("so maybe this is best in a seperate module i'm not sure")
     match ref_elem:
-        case ElementType.Vertex:        return (jnp.asarray([0.0]), jnp.asarray([0.0]))
-        case ElementType.Line:          return _gauss_legendre_ref_line(order)
-        case ElementType.Quadrilateral: return _gauss_legendre_ref_quad(order)
-        case ElementType.Hexahedra:     return _gauss_legendre_ref_cube(order)
-        case ElementType.Triangle:      raise NotSupportedError("gauss-legendre quadrature not supported for triangles")
-        case ElementType.Tetrahedra:    raise NotSupportedError("gauss-legendre quadrature not supported for tetrahedra")
+        case RefElem.Point: return (jnp.asarray([0.0]), jnp.asarray([0.0]))
+        case RefElem.Line:  return _gauss_legendre_ref_line(order)
+        case RefElem.Quad:  return _gauss_legendre_ref_quad(order)
+        case RefElem.Cube:  return _gauss_legendre_ref_cube(order)
+        case RefElem.Tri:   raise NotSupportedError("gauss-legendre quadrature not supported for triangles")
+        case RefElem.Tetra: raise NotSupportedError("gauss-legendre quadrature not supported for tetrahedrons")
 
 # - below is just helper functions -
 
