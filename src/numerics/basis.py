@@ -2,6 +2,7 @@ import jax.numpy as jnp
 
 from enum import Enum, auto
 from dataclasses import dataclass
+from typing import Optional
 from jax import Array
 from numerics.quadrature import QuadratureType
 from numerics.quadrature.rules import gauss_lobatto_rule, gauss_legendre_rule
@@ -16,12 +17,14 @@ class BasisData:
 
     # core data
     nodes: Array # the nodal points within the element (n_dofs, dim)
-    x_q: Array   # the quadrature points
-    w_q: Array   # the quadrature weights 
+    x_q:   Array # the quadrature points
+    w_q:   Array # the quadrature weights 
+    vandermonde: Array # basis function evaluations at quadrature points 
+    derivatives: Array # the partial derivatives of the vandermonde matrix
 
     @property
     def dimensions(self) -> int:
-        return self.elem_type.dimensions()
+        return self.nodes.shape[1]
     
     @property
     def n_dofs(self) -> int:
@@ -34,6 +37,40 @@ class InterpolationType(Enum):
 
 class BasisType(Enum):
     Lagrange = auto()
+    Legendre = auto()
+
+    def vandermonde(
+            self, 
+            ref_elem: 'RefElem', 
+            order: int, 
+            interpolation: Optional[InterpolationType]
+        ) -> Array:
+        """Top level API for getting the vandermonde matrix for a given basis over a given reference element"""
+        match self:
+            case BasisType.Lagrange:
+                if not interpolation:
+                    raise ValueError("interpolation type must be defined to build lagrange basis")
+                
+                match ref_elem:
+                    case 
+
+    def _vandermonde_lagrange_line():
+        todo()
+
+    def _vandermonde_lagrange_quad():
+        todo()
+
+    def _vandermonde_lagrange_cube():
+        todo()
+
+    def _vandermonde_legendre_line():
+        todo()
+
+    def _vandermonde_legendre_quad():
+        todo()
+
+    def _vandermonde_legendre_cube():
+        todo()
 
 class RefElem(Enum):
     """A reference element enum"""
@@ -43,6 +80,15 @@ class RefElem(Enum):
     Cube  = auto()
     Tri   = auto()
     Tetra = auto()
+
+    def __str__(self):
+        match self:
+            case RefElem.Point: return "point"
+            case RefElem.Line:  return "line"
+            case RefElem.Quad:  return "quad"
+            case RefElem.Cube:  return "cube"
+            case RefElem.Tri:   return "triangle"
+            case RefElem.Tetra: return "tetrahedron"
 
     def bounds(self) -> tuple[tuple[float, ...], ...]:
         """Returns the bounds of the bounding box for the given reference element"""
@@ -73,8 +119,7 @@ class RefElem(Enum):
                     (-1.0, -1.0,  1.0), ( 1.0, -1.0,  1.0),
                     ( 1.0,  1.0,  1.0), (-1.0,  1.0,  1.0),
                 )
-            case self.Tri:   raise NotImplementedError
-            case self.Tetra: raise NotImplementedError
+            case _: raise NotImplementedError(f"not implemented on {self} elements")
 
     def dimensions(self) -> int:
         """Returns the number of dimensions for the given reference element"""
@@ -112,8 +157,7 @@ class RefElem(Enum):
                 match method:
                     case QuadratureType.GaussLobatto: pass
                     case QuadratureType.GaussLegendre: pass
-            case self.Tri:   return 
-            case self.Tetra: return 
+            case _: raise NotImplementedError(f"not implemeneted on {self} elements")
 
     def get_interpolation_points(self, order: int, method: InterpolationType) -> Array:
         """Returns the interpolation points over a given element and interpolation type"""
@@ -134,18 +178,7 @@ class RefElem(Enum):
                     case InterpolationType.Equispaced:    return _get_ref_cube_equispaced_points(order)
                     case InterpolationType.GaussLobatto:  return _get_ref_cube_lobatto_points(order)
                     case InterpolationType.GaussLegendre: return _get_ref_cube_legendre_points(order)
-            case self.Tri:   return 
-            case self.Tetra: return
-
-def eval_lagrange_basis(ref_elem: RefElem, x_q: Array) -> Array:
-    """Evaluate the Lagrange basis function across a given reference element at points x_q, typically the quadrature points"""
-    match ref_elem:
-        case RefElem.Point: return 0
-        case RefElem.Line:  return _eval_lagrange_ref_line(x_q)
-        case RefElem.Quad:  return _eval_lagrange_ref_quad(x_q)
-        case RefElem.Cube:  return _eval_lagrange_ref_cube(x_q)
-        case RefElem.Tri:   raise NotImplementedError
-        case RefElem.Tetra: raise NotImplementedError
+            case _: raise NotImplementedError(f"not implemeneted on {self} elements")
 
 # - helpers -
 
