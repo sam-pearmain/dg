@@ -115,7 +115,8 @@ class RefElem(Enum):
             case self.Cube:  return (order + 1)**3
             case self.Tetra: return (order + 1) * (order + 2) * (order + 3) // 6
 
-    def build_basis(self) -> BasisData:
+    def build_basis(self, order: int, ) -> BasisData:
+        """This function precomputes basis data from what it is provided with and returns a BasisData class"""
         todo()
 
     def get_quadrature_points_weights(self, order: int, method: QuadratureType) -> tuple[Array, Array]:
@@ -154,12 +155,12 @@ class RefElem(Enum):
 
     def legendre_vandermonde(self, order: int) -> Array:
         match self:
-            case RefElem.Line: return _eval_legendre_basis_line(order)
-            case RefElem.Quad: return _eval_legendre_basis_quad(order)
-            case RefElem.Cube: return _eval_legendre_basis_cube(order)
+            case RefElem.Line: return NotImplementedError
+            case RefElem.Quad: return NotImplementedError
+            case RefElem.Cube: return NotImplementedError
             case _: raise NotSupportedError(f"legendre basis functions not supported on {self}")
 
-# - helpers -
+# - interpolation helpers -
 
 def _get_ref_line_equispaced_nodes(order):
     n_points = order + 1
@@ -203,11 +204,29 @@ def _get_ref_cube_legendre_nodes(order):
     x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
 
+# - vandermonde helpers -
 
 def _eval_lagrange_basis_line(
         order: int, # the order of the basis functions we want to use, this determines the number of interpolation points 
         interpolation: InterpolationType, # the type of interpolation
         quadrature: QuadratureType # the type of quadrature we use, this determines the x_q array, the list of coordinates we evalute the basis at
     ) -> Array:
-    nodes = RefElem.Line.get_interpolation_nodes(order, interpolation)
-    x_q = 
+    x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
+    x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
+
+    n_interpolation_nodes = x_n.shape[0]
+    n_quadrature_points   = x_q.shape[0]
+
+    vandermonde = jnp.ones((n_quadrature_points, n_interpolation_nodes), dtype = jnp.float64)
+
+    for i in range (n_interpolation_nodes):
+        for j in range(n_interpolation_nodes):
+            if i == j:
+                continue
+
+            numerator = x_q - x_n[j]
+            denominator = x_n[i] - x_n[j]
+
+            vandermonde = vandermonde.at[:, i].multiply(numerator / denominator)
+
+    return vandermonde
