@@ -39,36 +39,6 @@ class BasisType(Enum):
     Lagrange = auto()
     Legendre = auto()
 
-    def vandermonde(
-            self, 
-            ref_elem: 'RefElem', 
-            order: int, 
-            interpolation: Optional[InterpolationType]
-        ) -> Array:
-        """Top level API for getting the vandermonde matrix for a given basis over a given reference element"""
-        match self:
-            case BasisType.Lagrange:
-                if not interpolation:
-                    raise ValueError("interpolation type must be defined to build lagrange basis")
-
-    def _vandermonde_lagrange_line():
-        todo()
-
-    def _vandermonde_lagrange_quad():
-        todo()
-
-    def _vandermonde_lagrange_cube():
-        todo()
-
-    def _vandermonde_legendre_line():
-        todo()
-
-    def _vandermonde_legendre_quad():
-        todo()
-
-    def _vandermonde_legendre_cube():
-        todo()
-
 class RefElem(Enum):
     """A reference element enum"""
     Point = auto()
