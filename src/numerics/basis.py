@@ -50,9 +50,6 @@ class BasisType(Enum):
             case BasisType.Lagrange:
                 if not interpolation:
                     raise ValueError("interpolation type must be defined to build lagrange basis")
-                
-                match ref_elem:
-                    case 
 
     def _vandermonde_lagrange_line():
         todo()
@@ -182,14 +179,29 @@ class RefElem(Enum):
 
 # - helpers -
 
-def _construct_1d_lagrange_poly(x_n: Array) -> Array:
-    pass
+def _get_ref_line_equispaced_points(order):
+    todo()
 
-def _eval_lagrange_ref_line(x: Array) -> Array:
-    pass
+def _get_ref_quad_equispaced_points(order): 
+    todo()
 
-def _eval_lagrange_ref_quad(x: Array) -> Array:
-    pass
+def _get_ref_cube_equispaced_points(order):
+    todo()
 
-def _eval_lagrange_ref_cube(x: Array) -> Array:
-    pass
+def _get_ref_line_lobatto_points(order):
+    todo()
+
+def _get_ref_quad_lobatto_points(order):
+    todo()
+
+def _get_ref_cube_lobatto_points(order):
+    todo()
+
+def _get_ref_line_legendre_points(order):
+    todo()
+
+def _get_ref_quad_legendre_points(order):
+    todo()
+
+def _get_ref_cube_legendre_points(order):
+    todo()
