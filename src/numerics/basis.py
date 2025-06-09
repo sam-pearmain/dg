@@ -148,10 +148,16 @@ class RefElem(Enum):
 
     def lagrange_vandermonde(self, order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
         match self:
-            case RefElem.Line: return _eval_lagrange_basis_line(order, interpolation, quadrature)
-            case RefElem.Quad: return _eval_lagrange_basis_quad(order, interpolation, quadrature)
-            case RefElem.Cube: return _eval_lagrange_basis_cube(order, interpolation, quadrature)
+            case RefElem.Line: return _eval_lagrange_ref_line(order, interpolation, quadrature)
+            case RefElem.Quad: return _eval_lagrange_ref_quad(order, interpolation, quadrature)
+            case RefElem.Cube: return _eval_lagrange_ref_cube(order, interpolation, quadrature)
             case _: raise NotSupportedError(f"lagrange basis functions not supported on {self}")
+
+    def lagrange_derivative_vandermonde(self, order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
+        match self:
+            case RefElem.Line: return
+            case RefElem.Quad: return
+            case RefElem.Cube: return
 
     def legendre_vandermonde(self, order: int) -> Array:
         match self:
@@ -206,7 +212,7 @@ def _get_ref_cube_legendre_nodes(order):
 
 # - vandermonde helpers -
 
-def _eval_lagrange_basis_line(
+def _eval_lagrange_ref_line(
         order: int, # the order of the basis functions we want to use, this determines the number of interpolation points 
         interpolation: InterpolationType, # the type of interpolation
         quadrature: QuadratureType # the type of quadrature we use, this determines the x_q array, the list of coordinates we evalute the basis at
@@ -214,13 +220,13 @@ def _eval_lagrange_basis_line(
     x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
     x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
 
-    n_interpolation_nodes = x_n.shape[0]
-    n_quadrature_points   = x_q.shape[0]
+    n_nodes = x_n.shape[0]
+    n_quad_points   = x_q.shape[0]
 
-    vandermonde = jnp.ones((n_quadrature_points, n_interpolation_nodes), dtype = jnp.float64)
+    vandermonde = jnp.ones((n_quad_points, n_nodes), dtype = jnp.float64)
 
-    for i in range (n_interpolation_nodes):
-        for j in range(n_interpolation_nodes):
+    for i in range (n_nodes):
+        for j in range(n_nodes):
             if i == j:
                 continue
 
@@ -231,18 +237,52 @@ def _eval_lagrange_basis_line(
 
     return vandermonde
 
-def _eval_lagrange_basis_quad(
+def _eval_lagrange_ref_quad(
         order: int,
         interpolation: InterpolationType,
         quadrature: QuadratureType,
     ) -> Array:
-    vandermonde_1d = _eval_lagrange_basis_line(order, interpolation, quadrature)
+    vandermonde_1d = _eval_lagrange_ref_line(order, interpolation, quadrature)
     return jnp.kron(vandermonde_1d, vandermonde_1d)
 
-def _eval_lagrange_basis_cube(
+def _eval_lagrange_ref_cube(
         order: int,
         interpolation: InterpolationType,
         quadrature: QuadratureType,
     ) -> Array:
-    vandermonde_1d = _eval_lagrange_basis_line(order, interpolation, quadrature)
+    vandermonde_1d = _eval_lagrange_ref_line(order, interpolation, quadrature)
     return jnp.kron(jnp.kron(vandermonde_1d, vandermonde_1d), vandermonde_1d)
+
+def _eval_lagrange_derivative_ref_line(
+        order: int,
+        interpolation: InterpolationType,
+        quadrature: QuadratureType,
+    ) -> Array:
+    x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
+    x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
+
+    n_nodes = x_n.shape[0]
+    n_quad_points = x_q.shape[0]
+
+    derivatives = jnp.zeros((n_quad_points, n_nodes), dtype = jnp.float64)
+
+    for i in range(n_nodes):
+        for q in range(n_quad_points):
+            term_sum = 0
+            for k in range(n_nodes):
+                if k == i:
+                    continue
+
+                term_prod = 1
+                
+                for j in range(n_nodes):
+                    if j == i or j == k:
+                        continue
+
+                    term_prod *= (x_q[q] - x_n[j]) / (x_n[i] - x_n[j])
+                
+                term_sum += (1 / (x_n[i] - x_n[k])) * term_prod
+            
+            derivatives = derivatives.at[q, i].set(term_sum)
+
+    return derivatives
