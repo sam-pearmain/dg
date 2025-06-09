@@ -155,7 +155,7 @@ class RefElem(Enum):
 
     def lagrange_derivative_vandermonde(self, order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
         match self:
-            case RefElem.Line: return
+            case RefElem.Line: return _eval_lagrange_derivatives_ref_line(order, interpolation, quadrature)
             case RefElem.Quad: return
             case RefElem.Cube: return
 
@@ -168,55 +168,51 @@ class RefElem(Enum):
 
 # - interpolation helpers -
 
-def _get_ref_line_equispaced_nodes(order):
+def _get_ref_line_equispaced_nodes(order) -> Array:
     n_points = order + 1
     return jnp.linspace(-1, 1, n_points, dtype = jnp.float64)
 
-def _get_ref_quad_equispaced_nodes(order): 
+def _get_ref_quad_equispaced_nodes(order) -> Array: 
     nodes_1d = _get_ref_line_equispaced_nodes(order)
     x, y = jnp.meshgrid(nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel()]).T
 
-def _get_ref_cube_equispaced_nodes(order):
+def _get_ref_cube_equispaced_nodes(order) -> Array:
     nodes_1d = _get_ref_line_equispaced_nodes(order)
     x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
 
-def _get_ref_line_lobatto_nodes(order):
+def _get_ref_line_lobatto_nodes(order) -> Array:
     nodes, _ = gauss_lobatto_rule(RefElem.Line, order)
     return nodes
 
-def _get_ref_quad_lobatto_nodes(order):
+def _get_ref_quad_lobatto_nodes(order) -> Array:
     nodes_1d, _ = gauss_lobatto_rule(RefElem.Line, order)
     x, y = jnp.meshgrid(nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel()]).T
 
-def _get_ref_cube_lobatto_nodes(order):
+def _get_ref_cube_lobatto_nodes(order) -> Array:
     nodes_1d, _ = gauss_lobatto_rule(RefElem.Line, order)
     x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
 
-def _get_ref_line_legendre_nodes(order):
+def _get_ref_line_legendre_nodes(order) -> Array:
     nodes, _ = gauss_legendre_rule(RefElem.Line, order)
     return nodes
 
-def _get_ref_quad_legendre_nodes(order):
+def _get_ref_quad_legendre_nodes(order) -> Array:
     nodes_1d, _ = gauss_legendre_rule(RefElem.Line, order)
     x, y = jnp.meshgrid(nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel()]).T
 
-def _get_ref_cube_legendre_nodes(order):
+def _get_ref_cube_legendre_nodes(order) -> Array:
     nodes_1d, _ = gauss_legendre_rule(RefElem.Line, order)
     x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
 
 # - vandermonde helpers -
 
-def _eval_lagrange_ref_line(
-        order: int, # the order of the basis functions we want to use, this determines the number of interpolation points 
-        interpolation: InterpolationType, # the type of interpolation
-        quadrature: QuadratureType # the type of quadrature we use, this determines the x_q array, the list of coordinates we evalute the basis at
-    ) -> Array:
+def _eval_lagrange_ref_line(order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
     x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
     x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
 
@@ -237,27 +233,15 @@ def _eval_lagrange_ref_line(
 
     return vandermonde
 
-def _eval_lagrange_ref_quad(
-        order: int,
-        interpolation: InterpolationType,
-        quadrature: QuadratureType,
-    ) -> Array:
+def _eval_lagrange_ref_quad(order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
     vandermonde_1d = _eval_lagrange_ref_line(order, interpolation, quadrature)
     return jnp.kron(vandermonde_1d, vandermonde_1d)
 
-def _eval_lagrange_ref_cube(
-        order: int,
-        interpolation: InterpolationType,
-        quadrature: QuadratureType,
-    ) -> Array:
+def _eval_lagrange_ref_cube(order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
     vandermonde_1d = _eval_lagrange_ref_line(order, interpolation, quadrature)
     return jnp.kron(jnp.kron(vandermonde_1d, vandermonde_1d), vandermonde_1d)
 
-def _eval_lagrange_derivative_ref_line(
-        order: int,
-        interpolation: InterpolationType,
-        quadrature: QuadratureType,
-    ) -> Array:
+def _eval_lagrange_derivatives_ref_line(order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
     x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
     x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
 
@@ -274,7 +258,7 @@ def _eval_lagrange_derivative_ref_line(
                     continue
 
                 term_prod = 1
-                
+
                 for j in range(n_nodes):
                     if j == i or j == k:
                         continue
@@ -286,3 +270,22 @@ def _eval_lagrange_derivative_ref_line(
             derivatives = derivatives.at[q, i].set(term_sum)
 
     return derivatives
+
+def _eval_lagrange_derivatives_ref_quad(order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
+    v_1d = _eval_lagrange_ref_line(order, interpolation, quadrature)
+    d_1d = _eval_lagrange_derivatives_ref_line(order, interpolation, quadrature)
+    
+    dv_dx = jnp.kron(d_1d, v_1d)
+    dv_dy = jnp.kron(v_1d, d_1d)
+
+    return jnp.stack([dv_dx, dv_dy], axis = -1)
+
+def _eval_lagrange_derivatives_ref_cube(order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
+    v_1d = _eval_lagrange_ref_line(order, interpolation, quadrature)
+    d_1d = _eval_lagrange_derivatives_ref_line(order, interpolation, quadrature)
+
+    dv_dx = jnp.kron(jnp.kron(d_1d, v_1d), v_1d)
+    dv_dy = jnp.kron(jnp.kron(v_1d, d_1d), v_1d)
+    dv_dz = jnp.kron(jnp.kron(v_1d, v_1d), d_1d)
+
+    return jnp.stack([dv_dx, dv_dy, dv_dz], axis = -1)
