@@ -189,16 +189,25 @@ def _get_ref_line_lobatto_nodes(order):
     return nodes
 
 def _get_ref_quad_lobatto_nodes(order):
-    todo()
+    nodes_1d, _ = gauss_lobatto_rule(RefElem.Line, order)
+    x, y = jnp.meshgrid(nodes_1d, nodes_1d)
+    return jnp.vstack([x.ravel(), y.ravel()]).T
 
 def _get_ref_cube_lobatto_nodes(order):
-    todo()
+    nodes_1d, _ = gauss_lobatto_rule(RefElem.Line, order)
+    x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
+    return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
 
 def _get_ref_line_legendre_nodes(order):
-    todo()
+    nodes, _ = gauss_legendre_rule(RefElem.Line, order)
+    return nodes
 
 def _get_ref_quad_legendre_nodes(order):
-    todo()
+    nodes_1d, _ = gauss_legendre_rule(RefElem.Line, order)
+    x, y = jnp.meshgrid(nodes_1d, nodes_1d)
+    return jnp.vstack([x.ravel(), y.ravel()]).T
 
 def _get_ref_cube_legendre_nodes(order):
-    todo()
+    nodes_1d, _ = gauss_legendre_rule(RefElem.Line, order)
+    x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
+    return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
