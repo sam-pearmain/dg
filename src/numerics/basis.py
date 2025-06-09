@@ -115,23 +115,14 @@ class RefElem(Enum):
             case self.Cube:  return (order + 1)**3
             case self.Tetra: return (order + 1) * (order + 2) * (order + 3) // 6
 
-    def get_quadrature_points_weights(self, method: QuadratureType) -> tuple[Array, Array]:
+    def build_basis(self) -> BasisData:
+        todo()
+
+    def get_quadrature_points_weights(self, order: int, method: QuadratureType) -> tuple[Array, Array]:
         """Returns the quadrature points and weights for the given reference element and method"""
-        match self:
-            case self.Point: return (jnp.asarray(0.0, dtype = jnp.float64), jnp.asarray(0.0, dtype = jnp.float64))
-            case self.Line:  
-                match method:
-                    case QuadratureType.GaussLobatto: pass
-                    case QuadratureType.GaussLegendre: pass
-            case self.Quad: 
-                match method:
-                    case QuadratureType.GaussLobatto: pass
-                    case QuadratureType.GaussLegendre: pass
-            case self.Cube: 
-                match method:
-                    case QuadratureType.GaussLobatto: pass
-                    case QuadratureType.GaussLegendre: pass
-            case _: raise NotImplementedError(f"not implemeneted on {self} elements")
+        match method:
+            case QuadratureType.GaussLobatto:  return gauss_lobatto_rule(self, order)
+            case QuadratureType.GaussLegendre: return gauss_legendre_rule(self, order)
 
     def get_interpolation_nodes(self, order: int, method: InterpolationType) -> Array:
         """Returns the interpolation nodes over a given element and interpolation type"""
@@ -154,18 +145,18 @@ class RefElem(Enum):
                     case InterpolationType.GaussLegendre: return _get_ref_cube_legendre_nodes(order)
             case _: raise NotImplementedError(f"not implemeneted on {self} elements")
 
-    def get_lagrange_vandermonde(self, order: int, interpolation: InterpolationType) -> Array:
+    def lagrange_vandermonde(self, order: int, interpolation: InterpolationType) -> Array:
         match self:
-            case RefElem.Line: return _get_lagrange_vandermonde_ref_line(order, interpolation)
-            case RefElem.Quad: return _get_lagrange_vandermonde_ref_quad(order, interpolation)
-            case RefElem.Cube: return _get_lagrange_vandermonde_ref_cube(order, interpolation)
+            case RefElem.Line: return _eval_lagrange_basis_line(order, interpolation)
+            case RefElem.Quad: return _eval_lagrange_basis_quad(order, interpolation)
+            case RefElem.Cube: return _eval_lagrange_basis_cube(order, interpolation)
             case _: raise NotSupportedError(f"lagrange basis functions not supported on {self}")
 
-    def get_legendre_vandermonde(self, order: int) -> Array:
+    def legendre_vandermonde(self, order: int) -> Array:
         match self:
-            case RefElem.Line: return _get_legendre_vandermonde_ref_line(order)
-            case RefElem.Quad: return _get_legendre_vandermonde_ref_quad(order)
-            case RefElem.Cube: return _get_legendre_vandermonde_ref_cube(order)
+            case RefElem.Line: return _eval_legendre_basis_line(order)
+            case RefElem.Quad: return _eval_legendre_basis_quad(order)
+            case RefElem.Cube: return _eval_legendre_basis_cube(order)
             case _: raise NotSupportedError(f"legendre basis functions not supported on {self}")
 
 # - helpers -
@@ -211,3 +202,12 @@ def _get_ref_cube_legendre_nodes(order):
     nodes_1d, _ = gauss_legendre_rule(RefElem.Line, order)
     x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
     return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
+
+
+def _eval_lagrange_basis_line(
+        order: int, # the order of the basis functions we want to use, this determines the number of interpolation points 
+        interpolation: InterpolationType, # the type of interpolation
+        quadrature: QuadratureType # the type of quadrature we use, this determines the x_q array, the list of coordinates we evalute the basis at
+    ) -> Array:
+    nodes = RefElem.Line.get_interpolation_nodes(order, interpolation)
+    x_q = 
