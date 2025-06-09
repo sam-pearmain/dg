@@ -16,10 +16,10 @@ class BasisData:
     order: int
 
     # core data
-    nodes: Array # the nodal points within the element (n_dofs, dim)
-    x_q:   Array # the quadrature points
+    nodes: Array # the nodal nodes within the element (n_dofs, dim)
+    x_q:   Array # the quadrature nodes
     w_q:   Array # the quadrature weights 
-    vandermonde: Array # basis function evaluations at quadrature points 
+    vandermonde: Array # basis function evaluations at quadrature nodes 
     derivatives: Array # the partial derivatives of the vandermonde matrix
 
     @property
@@ -48,6 +48,9 @@ class RefElem(Enum):
     Tri   = auto()
     Tetra = auto()
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         match self:
             case RefElem.Point: return "point"
@@ -57,6 +60,7 @@ class RefElem(Enum):
             case RefElem.Tri:   return "triangle"
             case RefElem.Tetra: return "tetrahedron"
 
+    @property
     def bounds(self) -> tuple[tuple[float, ...], ...]:
         """Returns the bounds of the bounding box for the given reference element"""
         match self:
@@ -67,6 +71,7 @@ class RefElem(Enum):
             case self.Tri:   return ((0.0, 0.0), (1.0, 1.0))
             case self.Tetra: return ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
 
+    @property
     def vertices(self) -> tuple[tuple[float, ...], ...]:
         """Returns the coordinates for each of the vertices of the reference element"""
         match self:
@@ -88,6 +93,7 @@ class RefElem(Enum):
                 )
             case _: raise NotImplementedError(f"not implemented on {self} elements")
 
+    @property
     def dimensions(self) -> int:
         """Returns the number of dimensions for the given reference element"""
         match self: 
@@ -98,6 +104,7 @@ class RefElem(Enum):
             case self.Cube:  return 3
             case self.Tetra: return 3
 
+    @property
     def n_dofs(self, order: int) -> int:
         """Returns the number of degrees of freedom for the reference element"""
         match self:
@@ -126,52 +133,72 @@ class RefElem(Enum):
                     case QuadratureType.GaussLegendre: pass
             case _: raise NotImplementedError(f"not implemeneted on {self} elements")
 
-    def get_interpolation_points(self, order: int, method: InterpolationType) -> Array:
-        """Returns the interpolation points over a given element and interpolation type"""
+    def get_interpolation_nodes(self, order: int, method: InterpolationType) -> Array:
+        """Returns the interpolation nodes over a given element and interpolation type"""
         match self:
             case self.Point: return jnp.asarray(0.0, dtype = jnp.float64)
             case self.Line: 
                 match method:
-                    case InterpolationType.Equispaced:    return _get_ref_line_equispaced_points(order)
-                    case InterpolationType.GaussLobatto:  return _get_ref_line_lobatto_points(order)
-                    case InterpolationType.GaussLegendre: return _get_ref_line_legendre_points(order)
+                    case InterpolationType.Equispaced:    return _get_ref_line_equispaced_nodes(order)
+                    case InterpolationType.GaussLobatto:  return _get_ref_line_lobatto_nodes(order)
+                    case InterpolationType.GaussLegendre: return _get_ref_line_legendre_nodes(order)
             case self.Quad:  
                 match method:
-                    case InterpolationType.Equispaced:    return _get_ref_quad_equispaced_points(order)
-                    case InterpolationType.GaussLobatto:  return _get_ref_quad_lobatto_points(order)
-                    case InterpolationType.GaussLegendre: return _get_ref_quad_legendre_points(order)
+                    case InterpolationType.Equispaced:    return _get_ref_quad_equispaced_nodes(order)
+                    case InterpolationType.GaussLobatto:  return _get_ref_quad_lobatto_nodes(order)
+                    case InterpolationType.GaussLegendre: return _get_ref_quad_legendre_nodes(order)
             case self.Cube:  
                 match method: 
-                    case InterpolationType.Equispaced:    return _get_ref_cube_equispaced_points(order)
-                    case InterpolationType.GaussLobatto:  return _get_ref_cube_lobatto_points(order)
-                    case InterpolationType.GaussLegendre: return _get_ref_cube_legendre_points(order)
+                    case InterpolationType.Equispaced:    return _get_ref_cube_equispaced_nodes(order)
+                    case InterpolationType.GaussLobatto:  return _get_ref_cube_lobatto_nodes(order)
+                    case InterpolationType.GaussLegendre: return _get_ref_cube_legendre_nodes(order)
             case _: raise NotImplementedError(f"not implemeneted on {self} elements")
+
+    def get_lagrange_vandermonde(self, order: int, interpolation: InterpolationType) -> Array:
+        match self:
+            case RefElem.Line: return _get_lagrange_vandermonde_ref_line(order, interpolation)
+            case RefElem.Quad: return _get_lagrange_vandermonde_ref_quad(order, interpolation)
+            case RefElem.Cube: return _get_lagrange_vandermonde_ref_cube(order, interpolation)
+            case _: raise NotSupportedError(f"lagrange basis functions not supported on {self}")
+
+    def get_legendre_vandermonde(self, order: int) -> Array:
+        match self:
+            case RefElem.Line: return _get_legendre_vandermonde_ref_line(order)
+            case RefElem.Quad: return _get_legendre_vandermonde_ref_quad(order)
+            case RefElem.Cube: return _get_legendre_vandermonde_ref_cube(order)
+            case _: raise NotSupportedError(f"legendre basis functions not supported on {self}")
 
 # - helpers -
 
-def _get_ref_line_equispaced_points(order):
+def _get_ref_line_equispaced_nodes(order):
+    n_points = order + 1
+    return jnp.linspace(-1, 1, n_points, dtype = jnp.float64)
+
+def _get_ref_quad_equispaced_nodes(order): 
+    nodes_1d = _get_ref_line_equispaced_nodes(order)
+    x, y = jnp.meshgrid(nodes_1d, nodes_1d)
+    return jnp.vstack([x.ravel(), y.ravel()]).T
+
+def _get_ref_cube_equispaced_nodes(order):
+    nodes_1d = _get_ref_line_equispaced_nodes(order)
+    x, y, z = jnp.meshgrid(nodes_1d, nodes_1d, nodes_1d)
+    return jnp.vstack([x.ravel(), y.ravel(), z.ravel()]).T
+
+def _get_ref_line_lobatto_nodes(order):
+    nodes, _ = gauss_lobatto_rule(RefElem.Line, order)
+    return nodes
+
+def _get_ref_quad_lobatto_nodes(order):
     todo()
 
-def _get_ref_quad_equispaced_points(order): 
+def _get_ref_cube_lobatto_nodes(order):
     todo()
 
-def _get_ref_cube_equispaced_points(order):
+def _get_ref_line_legendre_nodes(order):
     todo()
 
-def _get_ref_line_lobatto_points(order):
+def _get_ref_quad_legendre_nodes(order):
     todo()
 
-def _get_ref_quad_lobatto_points(order):
-    todo()
-
-def _get_ref_cube_lobatto_points(order):
-    todo()
-
-def _get_ref_line_legendre_points(order):
-    todo()
-
-def _get_ref_quad_legendre_points(order):
-    todo()
-
-def _get_ref_cube_legendre_points(order):
+def _get_ref_cube_legendre_nodes(order):
     todo()

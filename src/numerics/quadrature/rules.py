@@ -78,31 +78,22 @@ def _gauss_lobatto_ref_line(order: int) -> tuple[Array, Array]:
 def _gauss_lobatto_ref_quad(order: int) -> tuple[Array, Array]:
     """Computes Gauss-Lobatto points and weights for a reference quad element"""
     x_1d, w_1d = _gauss_lobatto_ref_line(order)
-    n = x_1d.shape[0]
+    
+    x1, x2 = jnp.meshgrid(x_1d, x_1d) # x, y
+    x = jnp.vstack([x1.ravel(), x2.ravel()]).T
+    w = jnp.kron(w_1d, w_1d)
 
-    # perform the tensor product
-    x, w = [], []
-    for i in range(n):
-        for j in range(n):
-            x.append([x_1d[i], x_1d[j]])
-            w.append(w_1d[i] * w_1d[j])
-
-    return jnp.asarray(x), jnp.asarray(w)
+    return x, w
 
 def _gauss_lobatto_ref_cube(order: int) -> tuple[Array, Array]:
     """Computes Gauss-Lobatto points and weights for a reference cube element"""
     x_1d, w_1d = _gauss_lobatto_ref_line(order)
-    n = x_1d.shape[0]
+    
+    x1, x2, x3 = jnp.meshgrid(x_1d, x_1d, x_1d) # x, y, z
+    x = jnp.vstack([x1.ravel(), x2.ravel(), x3.ravel()]).T
+    w = jnp.kron(jnp.kron(w_1d, w_1d), w_1d)
 
-    # perform the tensor product
-    x, w = [], []
-    for i in range(n):
-        for j in range(n):
-            for k in range(n):
-                x.append([x_1d[i], x_1d[j], x_1d[k]])
-                w.append(w_1d[i] * w_1d[j] * w_1d[k])
-
-    return jnp.asarray(x), jnp.asarray(w)
+    return x, w
 
 def _gauss_legendre_ref_line(order: int) -> tuple[Array, Array]:
     """Computes the Gauss-Legendre points and weights for a reference line element"""
@@ -111,36 +102,27 @@ def _gauss_legendre_ref_line(order: int) -> tuple[Array, Array]:
     legendre_poly = np.polynomial.Legendre.basis(n)
     legendre_poly_deriv = legendre_poly.deriv()
 
-    x = np.concatenate([-1.0, legendre_poly_deriv.roots(), 1.0])
+    x = legendre_poly_deriv.roots()
     w = 2 / ((1 - x**2) * legendre_poly_deriv(x)**2)
 
-    return x, w
+    return jnp.asarray(x), jnp.asarray(w)
 
 def _gauss_legendre_ref_quad(order: int) -> tuple[Array, Array]:
     """Computes the Gauss-Legendre points and weights for a reference quad element"""
     x_1d, w_1d = _gauss_legendre_ref_line(order)
-    n = x_1d.shape[0]
+    
+    x1, x2 = jnp.meshgrid(x_1d, x_1d) # x, y
+    x = jnp.vstack([x1.ravel(), x2.ravel()]).T
+    w = jnp.kron(w_1d, w_1d)
 
-    # perform the tensor product
-    x, w = [], []
-    for i in range(n):
-        for j in range(n):
-            x.append([x_1d[i], x_1d[j]])
-            w.append(w_1d[i] * w_1d[j])
-
-    return jnp.asarray(x), jnp.asarray(w)
+    return x, w
 
 def _gauss_legendre_ref_cube(order: int) -> tuple[Array, Array]:
     """Computes the Guass-Legendre points and weights for a reference cube element"""
     x_1d, w_1d = _gauss_legendre_ref_line(order)
-    n = x_1d.shape[0]
+    
+    x1, x2, x3 = jnp.meshgrid(x_1d, x_1d, x_1d) # x, y, z
+    x = jnp.vstack([x1.ravel(), x2.ravel(), x3.ravel()]).T
+    w = jnp.kron(jnp.kron(w_1d, w_1d), w_1d)
 
-    # perform the tensor product
-    x, w = [], []
-    for i in range(n):
-        for j in range(n):
-            for k in range(n):
-                x.append([x_1d[i], x_1d[j], x_1d[k]])
-                w.append(w_1d[i] * w_1d[j] * w_1d[k])
-
-    return jnp.asarray(x), jnp.asarray(w)
+    return x, w
