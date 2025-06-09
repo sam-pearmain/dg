@@ -146,11 +146,11 @@ class RefElem(Enum):
                     case InterpolationType.GaussLegendre: return _get_ref_cube_legendre_nodes(order)
             case _: raise NotImplementedError(f"not implemeneted on {self} elements")
 
-    def lagrange_vandermonde(self, order: int, interpolation: InterpolationType) -> Array:
+    def lagrange_vandermonde(self, order: int, interpolation: InterpolationType, quadrature: QuadratureType) -> Array:
         match self:
-            case RefElem.Line: return _eval_lagrange_basis_line(order, interpolation)
-            case RefElem.Quad: return _eval_lagrange_basis_quad(order, interpolation)
-            case RefElem.Cube: return _eval_lagrange_basis_cube(order, interpolation)
+            case RefElem.Line: return _eval_lagrange_basis_line(order, interpolation, quadrature)
+            case RefElem.Quad: return _eval_lagrange_basis_quad(order, interpolation, quadrature)
+            case RefElem.Cube: return _eval_lagrange_basis_cube(order, interpolation, quadrature)
             case _: raise NotSupportedError(f"lagrange basis functions not supported on {self}")
 
     def legendre_vandermonde(self, order: int) -> Array:
@@ -230,3 +230,19 @@ def _eval_lagrange_basis_line(
             vandermonde = vandermonde.at[:, i].multiply(numerator / denominator)
 
     return vandermonde
+
+def _eval_lagrange_basis_quad(
+        order: int,
+        interpolation: InterpolationType,
+        quadrature: QuadratureType,
+    ) -> Array:
+    vandermonde_1d = _eval_lagrange_basis_line(order, interpolation, quadrature)
+    return jnp.kron(vandermonde_1d, vandermonde_1d)
+
+def _eval_lagrange_basis_cube(
+        order: int,
+        interpolation: InterpolationType,
+        quadrature: QuadratureType,
+    ) -> Array:
+    vandermonde_1d = _eval_lagrange_basis_line(order, interpolation, quadrature)
+    return jnp.kron(jnp.kron(vandermonde_1d, vandermonde_1d), vandermonde_1d)
