@@ -216,13 +216,13 @@ def _eval_lagrange_ref_line(order: int, interpolation: InterpolationType, quadra
     x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
     x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
 
-    n_nodes = x_n.shape[0]
+    n_basis_funcs = x_n.shape[0]
     n_quad_points   = x_q.shape[0]
 
-    vandermonde = jnp.ones((n_quad_points, n_nodes), dtype = jnp.float64)
+    vandermonde = jnp.ones((n_quad_points, n_basis_funcs), dtype = jnp.float64)
 
-    for i in range (n_nodes):
-        for j in range(n_nodes):
+    for i in range (n_basis_funcs):
+        for j in range(n_basis_funcs):
             if i == j:
                 continue
 
@@ -245,21 +245,21 @@ def _eval_lagrange_derivatives_ref_line(order: int, interpolation: Interpolation
     x_n    = RefElem.Line.get_interpolation_nodes(order, interpolation)
     x_q, _ = RefElem.Line.get_quadrature_points_weights(order, quadrature)
 
-    n_nodes = x_n.shape[0]
+    n_basis_funcs = x_n.shape[0]
     n_quad_points = x_q.shape[0]
 
-    derivatives = jnp.zeros((n_quad_points, n_nodes), dtype = jnp.float64)
+    derivatives = jnp.zeros((n_quad_points, n_basis_funcs), dtype = jnp.float64)
 
-    for i in range(n_nodes):
+    for i in range(n_basis_funcs):
         for q in range(n_quad_points):
             term_sum = 0
-            for k in range(n_nodes):
+            for k in range(n_basis_funcs):
                 if k == i:
                     continue
 
                 term_prod = 1
 
-                for j in range(n_nodes):
+                for j in range(n_basis_funcs):
                     if j == i or j == k:
                         continue
 
