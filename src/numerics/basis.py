@@ -18,8 +18,8 @@ class BasisData:
     # core data
     nodes: Array # the nodal nodes within the element (n_dofs, dim)
     x_q:   Array # the quadrature nodes
-    w_q:   Array # the quadrature weights 
-    vandermonde: Array # basis function evaluations at quadrature nodes 
+    w_q:   Array # the quadrature weights
+    vandermonde: Array # basis function evaluations at quadrature nodes
     derivatives: Array # the partial derivatives of the vandermonde matrix
 
     @property
@@ -32,10 +32,20 @@ class BasisData:
     
 class BasisCache:
     """A cache for all the shape basis functions that lives in RAM"""
-    cache: Union[dict[('RefElem', int), BasisData], Uninit]
+    cache: Union[dict[tuple['RefElem', int], BasisData], Uninit]
 
-    def __init__(self, basis_type: 'BasisType'):
+    def __init__(self, basis_type: 'BasisType', interpolation: Optional['InterpolationType'] = None):
         self.cache = Uninit
+        self.basis_type = basis_type
+
+        match basis_type:
+            case BasisType.Lagrange: 
+                if interpolation is None:
+                    raise ValueError("interpolation type must be specified to build lagrange basis functions")
+                self.interpolation = interpolation
+            case BasisType.Legendre:
+                todo()
+            case _: NotImplementedError
 
     def fetch_data(ref_elem: 'RefElem', order: int) -> BasisData:
         pass
