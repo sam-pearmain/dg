@@ -58,19 +58,29 @@ class BasisCache:
 
 class QuadratureCache:
     """A cache that stores and indexes quadrature points and weights on demand"""
-    cache: dict[tuple['RefElem', QuadratureType, int], tuple[Array, Array]]
+    cache: dict[tuple['RefElem', int], tuple[Array, Array]]
     
-    def __init__(self):
-        self.cache = Uninit
+    def __init__(self, quad_type: QuadratureType):
+        self.cache = {}
+        self.quad_type = quad_type
 
-    def fetch_quadrature_points_weights(self, ref_elem: 'RefElem', quad_type: QuadratureType, order: int) -> tuple[Array, Array]:
-        pass
+    def fetch_quadrature_points_weights(self, ref_elem: 'RefElem', order: int) -> tuple[Array, Array]:
+        """Lazily builds and returns a quadrature rule"""
+        key = (ref_elem, order)
+        if key not in self.cache:
+            self.cache[key] = ref_elem.get_quadrature_points_weights(order, self.quad_type)
 
-    def fetch_quadrature_points(self, ref_elem: 'RefElem', quad_type: QuadratureType, order: int) -> Array:
-        pass
+        return self.cache[key]
 
-    def fetch_quadrature_weights(self, ref_elem: 'RefElem', quad_type: QuadratureType, order: int) -> Array:
-        pass
+    def fetch_quadrature_points(self, ref_elem: 'RefElem', order: int) -> Array:
+        """Method only to fetch quadrature points"""
+        points, _ = self.fetch_quadrature_points_weights(ref_elem, order)
+        return points
+
+    def fetch_quadrature_weights(self, ref_elem: 'RefElem', order: int) -> Array:
+        """Method only to fetch quadrature weights"""
+        _, weights = self.fetch_quadrature_points_weights(ref_elem, order)
+        return weights
 
 class RefElem(Enum):
     """A reference element enum"""
