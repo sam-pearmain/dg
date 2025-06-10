@@ -8,35 +8,35 @@ from numerics.quadrature import QuadratureType
 from numerics.quadrature.rules import gauss_lobatto_rule, gauss_legendre_rule
 from utils import todo, NotSupportedError, Uninit
 
+class InterpolationType(Enum):
+    Equispaced = auto()
+    GaussLobatto = auto()
+    GaussLegendre = auto()
+
+class BasisType(Enum):
+    Lagrange = auto()
+    Legendre = auto()
+
 @dataclass(frozen = True)
-class BasisData:
+class BasisKey:
     """An immutable container for precomputed basis data on a given reference element and basis function type"""
-    elem_type: 'RefElem'
-    basis_type: 'BasisType'
-    order: int
+    elem_type:  'RefElem'
+    basis_type:  BasisType
+    basis_order: int
+    quad_order:  int
+    quad_type:   QuadratureType
 
-    # core data
-    nodes: Array # the nodal nodes within the element (n_dofs, dim)
-    x_q:   Array # the quadrature nodes
-    w_q:   Array # the quadrature weights
-    vandermonde: Array # basis function evaluations at quadrature nodes
+@dataclass(frozen = True)
+class BasisOperators:
+    vandermonde: Array # the vandermonde matrix (ij), basis function (j) evaluated at quad point (i)
     derivatives: Array # the partial derivatives of the vandermonde matrix
-
-    @property
-    def dimensions(self) -> int:
-        return self.nodes.shape[1]
-    
-    @property
-    def n_dofs(self) -> int:
-        return self.nodes.shape[0]
     
 class BasisCache:
     """A cache for all the shape basis functions that lives in RAM"""
-    cache: Union[dict[tuple['RefElem', int], BasisData], Uninit]
+    _cache: Union[dict[BasisKey, BasisOperators], Uninit]
 
     def __init__(self, basis_type: 'BasisType', interpolation: Optional['InterpolationType'] = None):
-        self.cache = Uninit
-        self.basis_type = basis_type
+        self._cache = Uninit
 
         match basis_type:
             case BasisType.Lagrange: 
@@ -47,17 +47,30 @@ class BasisCache:
                 todo()
             case _: NotImplementedError
 
-    def fetch_data(ref_elem: 'RefElem', order: int) -> BasisData:
+    def fetch_operators(key: BasisKey) -> BasisOperators:
         pass
 
-class InterpolationType(Enum):
-    Equispaced = auto()
-    GaussLobatto = auto()
-    GaussLegendre = auto()
+    def fetch_vandermonde(key: BasisKey) -> Array:
+        pass
 
-class BasisType(Enum):
-    Lagrange = auto()
-    Legendre = auto()
+    def fetch_derivatives(key: BasisKey) -> Array:
+        pass
+
+class QuadratureCache:
+    """A cache that stores and indexes quadrature points and weights on demand"""
+    cache: dict[tuple['RefElem', QuadratureType, int], tuple[Array, Array]]
+    
+    def __init__(self):
+        self.cache = Uninit
+
+    def fetch_quadrature_points_weights(self, ref_elem: 'RefElem', quad_type: QuadratureType, order: int) -> tuple[Array, Array]:
+        pass
+
+    def fetch_quadrature_points(self, ref_elem: 'RefElem', quad_type: QuadratureType, order: int) -> Array:
+        pass
+
+    def fetch_quadrature_weights(self, ref_elem: 'RefElem', quad_type: QuadratureType, order: int) -> Array:
+        pass
 
 class RefElem(Enum):
     """A reference element enum"""
@@ -135,8 +148,8 @@ class RefElem(Enum):
             case self.Cube:  return (order + 1)**3
             case self.Tetra: return (order + 1) * (order + 2) * (order + 3) // 6
 
-    def build_basis(self, order: int, ) -> BasisData:
-        """This function precomputes basis data from what it is provided with and returns a BasisData class"""
+    def build_basis(self, order: int, ) -> BasisKey:
+        """This function precomputes basis data from what it is provided with and returns a BasisKey class"""
         todo()
 
     def get_quadrature_points_weights(self, order: int, method: QuadratureType) -> tuple[Array, Array]:
