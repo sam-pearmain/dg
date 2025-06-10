@@ -2,11 +2,11 @@ import jax.numpy as jnp
 
 from enum import Enum, auto
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 from jax import Array
 from numerics.quadrature import QuadratureType
 from numerics.quadrature.rules import gauss_lobatto_rule, gauss_legendre_rule
-from utils import todo, NotSupportedError
+from utils import todo, NotSupportedError, Uninit
 
 @dataclass(frozen = True)
 class BasisData:
@@ -29,6 +29,16 @@ class BasisData:
     @property
     def n_dofs(self) -> int:
         return self.nodes.shape[0]
+    
+class BasisCache:
+    """A cache for all the shape basis functions that lives in RAM"""
+    cache: Union[dict[('RefElem', int), BasisData], Uninit]
+
+    def __init__(self, basis_type: 'BasisType'):
+        self.cache = Uninit
+
+    def fetch_data(ref_elem: 'RefElem', order: int) -> BasisData:
+        pass
 
 class InterpolationType(Enum):
     Equispaced = auto()
