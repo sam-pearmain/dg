@@ -23,8 +23,8 @@ class BasisKey:
     elem_type:  'RefElem'
     basis_type:  BasisType
     basis_order: int
-    quad_order:  int
     quad_type:   QuadratureType
+    quad_order:  int
 
 @dataclass(frozen = True)
 class BasisOperators:
