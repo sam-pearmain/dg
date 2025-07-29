@@ -2,7 +2,6 @@ import jax.numpy as jnp
 
 from enum import Enum, auto
 from jax import Array
-
 from physics import Physics
 
 class ConvectiveNumericalFlux(Enum):
