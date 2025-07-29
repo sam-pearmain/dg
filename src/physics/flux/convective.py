@@ -12,7 +12,7 @@ class ConvectiveNumericalFlux(Enum):
 
     def compute_numerical_flux(self, u_l: Array, u_r: Array, normal: Array, physics: Physics) -> Array:
         match self:
-            case self.Rusanov: rusanov_flux(u_l, u_r, normal, physics)
+            case self.Rusanov: return rusanov_flux(u_l, u_r, normal, physics)
             case _: raise NotImplementedError("unknown convective flux function")
 
 def rusanov_flux(u_l: Array, u_r: Array, normal: Array, physics: Physics) -> Array:
