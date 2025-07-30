@@ -1,4 +1,6 @@
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from jaxtyping import Array, Float64
 from utils import todo
@@ -21,6 +23,12 @@ class PhysicsBase(ABC):
         """The supported boundary conditions for the system"""
         ...
 
+    @abstractmethod
+    @dataclass(frozen = True)
+    class PhysicalConstants:
+        """Container for physical constants"""
+        ...
+
     @property
     def n_state_vars(self) -> int:
         """Returns the number of state vars of the system"""
@@ -30,6 +38,11 @@ class PhysicsBase(ABC):
     @abstractmethod
     def dimensions(self) -> int:
         """Returns the number of physical dimensions of the system"""
+        ...
+
+    @property
+    def constants(self) -> PhysicalConstants:
+        """Returns the physical constants"""
         ...
 
 class ConvectiveTerms(ABC):
