@@ -1,31 +1,37 @@
 import jax.numpy as jnp
 
+from typing import Callable
 from enum import Enum, auto
-from jax import Array
+from jaxtyping import Float64, Array
 from physics import Physics
+from utils import todo
 
-class ConvectiveNumericalFlux(Enum):
-    Rusanov = auto()
+class ConvectiveNumericalFluxType(Enum):
     Roe = auto()
+    Gudonov = auto()
     HLL = auto()
+    HLLC = auto()
 
-    def compute_numerical_flux(self, u_l: Array, u_r: Array, normal: Array, physics: Physics) -> Array:
+    def get_convective_numerical_flux_function(self) -> Callable:
         match self:
-            case self.Rusanov: return rusanov_flux(u_l, u_r, normal, physics)
+            case self.Roe: return roe_flux
             case _: raise NotImplementedError("unknown convective flux function")
 
-def rusanov_flux(u_l: Array, u_r: Array, normal: Array, physics: Physics) -> Array:
-    """The Rusanov/local Lax-Friedrichs numerical flux."""
-    # get the physical flux from the left and right states
-    f_l = physics.convective_flux(u_l, normal)
-    f_r = physics.convective_flux(u_r, normal)
+def roe_flux(
+    u_l: Float64[Array, "n_fq n_s"], 
+    u_r: Float64[Array, "n_fq n_s"], 
+    normals: Float64[Array, "n_fq n_d"], 
+    physics: Physics
+) -> Float64[Array, "n_fq n_s"]:
+    """
+    Computes the convective numerical flux across a face using Roe's approximate Riemann solver
+    """
+    todo("non-physical behaviour when wave speed is close to zero")
+    f_l = physics.compute_convective_flux_face(u_l, normals)
+    f_r = physics.compute_convective_flux_face(u_r, normals)
 
-    # get the maximum wave speeds (eigenvalues) for the left and right states
-    lambda_l = physics.max_eigenvalue(u_l, normal)
-    lambda_r = physics.max_eigenvalue(u_r, normal)
+    roe_avg = physics.compute_roe_average(u_l, u_r)
 
-    # the maximum wave speed at the interface is the max of the two
-    s_max = jnp.maximum(lambda_l, lambda_r)
 
-    # Rusanov flux formula
-    return 0.5 * (f_l + f_r) - 0.5 * s_max * (u_r - u_l)
+
+    return 0.5 * (f_l + f_r) - 0.5 * A * (u_r - u_l)

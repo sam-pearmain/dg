@@ -1,10 +1,9 @@
-import jax.numpy as jnp
-
 from abc import ABC, abstractmethod
 from enum import Enum
-from jax import Array
+from jaxtyping import Array, Float64
+from utils import todo
 
-class Physics(ABC):
+class PhysicsBase(ABC):
     """
     The physics abstract base class is the skeleton for any weak DG formulation of a governing 
     advection-diffusion-type PDE
@@ -15,12 +14,12 @@ class Physics(ABC):
     @abstractmethod
     class StateVariables(Enum):
         """The state variables"""
-        pass
+        ...
 
     @abstractmethod
-    class SupportedBoundaryConditions(Enum):
+    class BoundaryConditions(Enum):
         """The supported boundary conditions for the system"""
-        pass
+        ...
 
     @property
     def n_state_vars(self) -> int:
@@ -31,81 +30,87 @@ class Physics(ABC):
     @abstractmethod
     def dimensions(self) -> int:
         """Returns the number of physical dimensions of the system"""
-        pass
+        ...
 
+class ConvectiveTerms(ABC):
     @abstractmethod
     def compute_convective_flux(
         self,
-        u: Array
-    ) -> Array:
+        u: Float64[Array, "n_q n_s"]
+    ) -> Float64[Array, "n_q n_s"]:
         """Computes the convective flux"""
-        pass
+        ...
 
     @abstractmethod
-    def compute_diffusive_flux(
-        self,
-        u: Array, 
-        grad_u: Array
-    ) -> Array:
-        """Computes the diffusive flux"""
-        pass
-
     def compute_convective_flux_face(
         self, 
-        u: Array, 
-        normal: Array,
-    ) -> Array:
+        u: Float64[Array, "n_fq n_s"], 
+        normals: Float64[Array, "n_fq n_d"],
+    ) -> Float64[Array, "n_fq n_s"]:
         """Computes the convective flux across a face"""
-        return jnp.dot(self.compute_convective_flux(u), normal)
-
-    def compute_diffusive_flux_face(
-        self, 
-        u: Array,
-        grad_u: Array, 
-        normal: Array,
-    ) -> Array:
-        """Computes the diffusive flux across a face"""
-        pass
+        todo("will likely need to use einsum so we dot with the correct normals")
+        ...
 
     @abstractmethod
     def compute_convective_numerical_flux(
         self,
-        u_l: Array, 
-        u_r: Array, 
-        normal: Array
-    ) -> Array:
+        u_l: Float64[Array, "n_fq n_s"], 
+        u_r: Float64[Array, "n_fq n_s"], 
+        normals: Float64[Array, "n_fq n_d"]
+    ) -> Float64[Array, "n_fq n_s"]:
         """Computes the convective numerical flux at either inteior or boundary faces"""
-        pass
+        ...
+
+class DiffusiveTerms(ABC):
+    @abstractmethod
+    def compute_diffusive_flux(
+        self,
+        u: Float64[Array, "n_q n_s"], 
+        grad_u: Float64[Array, "n_q n_s"]
+    ) -> Float64[Array, "n_q n_s"]:
+        """Computes the diffusive flux within a single element at given quadrature points"""
+        ...
+
+    @abstractmethod
+    def compute_diffusive_flux_face(
+        self, 
+        u: Float64[Array, "n_fq n_s"],
+        grad_u: Float64[Array, "n_fq n_s"], 
+        normals: Float64[Array, "n_fq n_d"],
+    ) -> Float64[Array, "n_fq n_s"]:
+        """Computes the diffusive flux across a face"""
+        ...
 
     @abstractmethod
     def compute_diffusive_numerical_flux(
         self,
-        u_l: Array, 
-        u_r: Array, 
-        grad_u_l: Array, 
-        grad_u_r: Array, 
-        normal: Array
-    ) -> Array:
+        u_l: Float64[Array, "n_fq n_s"], 
+        u_r: Float64[Array, "n_fq n_s"], 
+        grad_u_l: Float64[Array, "n_fq n_s"], 
+        grad_u_r: Float64[Array, "n_fq n_s"], 
+        normals: Float64[Array, "n_fq n_d"]
+    ) -> Float64[Array, "n_fq n_s"]:
         """Computes the diffusive numerical flux on interior faces"""
-        pass 
+        ... 
 
     @abstractmethod
     def compute_diffusive_numerical_flux_boundary(
         self,
-        u_l: Array, 
-        u_r: Array, 
-        grad_u_l: Array, 
-        normal: Array
-    ) -> Array:
+        u_l: Float64[Array, "n_fq n_s"], 
+        u_r: Float64[Array, "n_fq n_s"], 
+        grad_u_l: Float64[Array, "n_fq n_s"], 
+        normals: Float64[Array, "n_fq n_d"]
+    ) -> Float64[Array, "n_fq n_s"]:
         """Computes the diffusive numerical flux on boundary faces"""
-        pass
+        ...
 
+class SourceTerms(ABC): 
     @abstractmethod
     def compute_source_terms(
         self,
-        u: Array, 
+        u: Array,
         x: Array,
         t: float,
     ) -> Array:
         """Computes the sum of all source terms"""
-        pass
+        ...
