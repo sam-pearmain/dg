@@ -1,6 +1,6 @@
-import jax.numpy as jnp 
+import jax.numpy as jnp
 
-from abc import ABC, abstractmethod, abs
+from abc import ABC, abstractmethod
 from enum import Enum
 from jax import Array
 
@@ -10,12 +10,16 @@ class Physics(ABC):
     advection-diffusion-type PDE
     """
     def __init__(self):
-        pass
+        super().__init__()
 
-    @property
     @abstractmethod
     class StateVariables(Enum):
         """The state variables"""
+        pass
+
+    @abstractmethod
+    class SupportedBoundaryConditions(Enum):
+        """The supported boundary conditions for the system"""
         pass
 
     @property
@@ -26,7 +30,7 @@ class Physics(ABC):
     @property
     @abstractmethod
     def dimensions(self) -> int:
-        """The physical dimensions of the system"""
+        """Returns the number of physical dimensions of the system"""
         pass
 
     @abstractmethod
@@ -34,7 +38,7 @@ class Physics(ABC):
         self,
         u: Array
     ) -> Array:
-        """Computes the analytical convective flux"""
+        """Computes the convective flux"""
         pass
 
     @abstractmethod
@@ -43,7 +47,24 @@ class Physics(ABC):
         u: Array, 
         grad_u: Array
     ) -> Array:
-        """Computes the analytical diffusive flux"""
+        """Computes the diffusive flux"""
+        pass
+
+    def compute_convective_flux_face(
+        self, 
+        u: Array, 
+        normal: Array,
+    ) -> Array:
+        """Computes the convective flux across a face"""
+        return jnp.dot(self.compute_convective_flux(u), normal)
+
+    def compute_diffusive_flux_face(
+        self, 
+        u: Array,
+        grad_u: Array, 
+        normal: Array,
+    ) -> Array:
+        """Computes the diffusive flux across a face"""
         pass
 
     @abstractmethod
