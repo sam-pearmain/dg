@@ -5,14 +5,11 @@ from enum import Enum
 from jaxtyping import Array, Float64
 from utils import todo
 
-class PhysicsBase(ABC):
+class Physics(ABC):
     """
     The physics abstract base class is the skeleton for any weak DG formulation of a governing 
     advection-diffusion-type PDE
     """
-    def __init__(self):
-        super().__init__()
-
     @abstractmethod
     class StateVariables(Enum):
         """The state variables"""
@@ -43,6 +40,16 @@ class PhysicsBase(ABC):
     @property
     def constants(self) -> PhysicalConstants:
         """Returns the physical constants"""
+        ...
+
+    @abstractmethod
+    def conservatives_to_primatives(self, u_cons: Float64[Array, "n_q n_s"]) -> Float64[Array, "n_q n_s"]:
+        """Computes the primitives from the conservatives"""
+        ...
+
+    @abstractmethod
+    def primatives_to_conservatives(self, u_prim: Float64[Array, "n_q n_s"]) -> Float64[Array, "n_q n_s"]:
+        """Computes the conservatives from the primatives"""
         ...
 
 class ConvectiveTerms(ABC):

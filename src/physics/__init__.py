@@ -1,1 +1,1 @@
-from .base import Physics
+from .base import PhysicsBase
