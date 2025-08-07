@@ -10,20 +10,22 @@ class Physics(ABC):
     The physics abstract base class is the skeleton for any weak DG formulation of a governing 
     advection-diffusion-type PDE
     """
+    @property
     @abstractmethod
-    class StateVariables(Enum):
+    def state_variables(self) -> Enum:
         """The state variables"""
         ...
 
+    @property
     @abstractmethod
-    class BoundaryTypes(Enum):
-        """The supported types of boundary conditions for the system"""
+    def boundary_conditions(self) -> Enum:
+        """The boundary conditions"""
         ...
 
+    @property
     @abstractmethod
-    @dataclass(frozen = True)
-    class PhysicalConstants:
-        """Container for physical constants"""
+    def physical_constants(self) -> dataclass:
+        """The physical constants"""
         ...
 
     @property
@@ -35,11 +37,6 @@ class Physics(ABC):
     @abstractmethod
     def dimensions(self) -> int:
         """Returns the number of physical dimensions of the system"""
-        ...
-
-    @property
-    def constants(self) -> PhysicalConstants:
-        """Returns the physical constants"""
         ...
 
     @abstractmethod
@@ -138,4 +135,10 @@ class SourceTerms(ABC):
         t: float,
     ) -> Array:
         """Computes the sum of all source terms"""
+        ...
+
+class PhysicalConstants(ABC):
+    @property
+    @abstractmethod
+    def constants(self) -> dataclass:
         ...

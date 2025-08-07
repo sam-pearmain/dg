@@ -1,17 +1,23 @@
+from dataclasses import dataclass
+from enum import Enum
+from physics.base import Physics, ConvectiveTerms, PhysicalConstants
 
-from jaxtyping import Float64
-from physics import Physics, ConvectiveTerms
+@dataclass(frozen = True)
+class ScalarAdvectionConstants:
+    a: float = 1.0
 
-class ConstantVelocityScalarAdvection1D(Physics, ConvectiveTerms):
-    """∂u/∂t + a * ∂u/∂x = 0"""
-    def __init__(self, a: Float64) -> None:
-        super().__init__()
-
-    class StateVariables:
-        u = "u"
-
-    class BoundaryTypes:
-        DIRICHLET = "dirichlet"
-        NEUMANN = "neumann"
-
+class ScalarAdvection(Physics, ConvectiveTerms, PhysicalConstants):
+    """
+    The constant velocity scalar advection equation in 1D.
     
+    ∂u/∂t + a * ∂u/∂x = 0
+    """
+    @property
+    def state_variables() -> Enum:
+        class StateVariables(Enum):
+            u = "u"
+        return StateVariables
+    
+    @property
+    def boundary_conditions() -> Enum:
+        pass

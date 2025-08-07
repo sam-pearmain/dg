@@ -27,11 +27,3 @@ def roe_flux(
     Computes the convective numerical flux across a face using Roe's approximate Riemann solver
     """
     todo("non-physical behaviour when wave speed is close to zero")
-    f_l = physics.compute_convective_flux_face(u_l, normals)
-    f_r = physics.compute_convective_flux_face(u_r, normals)
-
-    roe_avg = physics.compute_roe_average(u_l, u_r)
-
-
-
-    return 0.5 * (f_l + f_r) - 0.5 * A * (u_r - u_l)
