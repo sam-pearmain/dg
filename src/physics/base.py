@@ -19,13 +19,7 @@ class Physics(ABC):
     @property
     @abstractmethod
     def boundary_conditions(self) -> Enum:
-        """The boundary conditions"""
-        ...
-
-    @property
-    @abstractmethod
-    def physical_constants(self) -> dataclass:
-        """The physical constants"""
+        """The supported boundary conditions, the meshes cell tags must correspond to these"""
         ...
 
     @property
@@ -40,12 +34,18 @@ class Physics(ABC):
         ...
 
     @abstractmethod
-    def conservatives_to_primatives(self, u_cons: Float64[Array, "n_q n_s"]) -> Float64[Array, "n_q n_s"]:
+    def conservatives_to_primatives(
+        self, 
+        u_cons: Float64[Array, "n_q n_s"]
+    ) -> Float64[Array, "n_q n_s"]:
         """Computes the primitives from the conservatives"""
         ...
 
     @abstractmethod
-    def primatives_to_conservatives(self, u_prim: Float64[Array, "n_q n_s"]) -> Float64[Array, "n_q n_s"]:
+    def primatives_to_conservatives(
+        self, 
+        u_prim: Float64[Array, "n_q n_s"]
+    ) -> Float64[Array, "n_q n_s"]:
         """Computes the conservatives from the primatives"""
         ...
 
@@ -140,9 +140,10 @@ class SourceTerms(ABC):
         """Computes the sum of all source terms"""
         ...
 
-class Constants(ABC):
+class Constants():
     """The physical constants of the governing equations"""
     @property
     @abstractmethod
-    def constants(self) -> dataclass:
-        ...
+    def constants(constants: dataclass) -> dataclass:
+        """This effectively just points to an external immutable dataclass"""
+        return constants

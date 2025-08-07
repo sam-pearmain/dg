@@ -22,4 +22,5 @@ class ScalarAdvection(Physics, ConvectiveFlux, Constants):
     def boundary_conditions() -> Enum:
         pass
 
-    def 
+    @property
+    def constants(ScalarAdvectionConstants)
