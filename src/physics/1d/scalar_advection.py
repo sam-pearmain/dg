@@ -1,11 +1,17 @@
-from physics import Physics
 
-class ConstantVelocityScalarAdvection1D(Physics):
+from jaxtyping import Float64
+from physics import Physics, ConvectiveTerms
+
+class ConstantVelocityScalarAdvection1D(Physics, ConvectiveTerms):
     """∂u/∂t + a * ∂u/∂x = 0"""
-    dimensions = 1
+    def __init__(self, a: Float64) -> None:
+        super().__init__()
 
-    def __init__(self, a: float):
-        self.a = a
+    class StateVariables:
+        u = "u"
 
-    def compute_convective_flux(self, u):
-        return u * self.a
+    class BoundaryTypes:
+        DIRICHLET = "dirichlet"
+        NEUMANN = "neumann"
+
+    

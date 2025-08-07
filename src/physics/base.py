@@ -16,8 +16,8 @@ class Physics(ABC):
         ...
 
     @abstractmethod
-    class BoundaryConditions(Enum):
-        """The supported boundary conditions for the system"""
+    class BoundaryTypes(Enum):
+        """The supported types of boundary conditions for the system"""
         ...
 
     @abstractmethod
@@ -53,6 +53,11 @@ class Physics(ABC):
         ...
 
 class ConvectiveTerms(ABC):
+    @abstractmethod
+    class SupportedConvectiveNumericalFlux(Enum):
+        """The supported convective numerical flux functions for a given problem"""
+        ...
+
     @abstractmethod
     def compute_convective_flux(
         self,

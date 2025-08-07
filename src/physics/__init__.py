@@ -1,1 +1,1 @@
-from .base import PhysicsBase
+from .base import Physics, ConvectiveTerms, DiffusiveTerms, SourceTerms
