@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from enum import Enum
-from physics.base import Physics, ConvectiveTerms, PhysicalConstants
+from physics.base import Physics, ConvectiveFlux, Constants
 
 @dataclass(frozen = True)
 class ScalarAdvectionConstants:
     a: float = 1.0
 
-class ScalarAdvection(Physics, ConvectiveTerms, PhysicalConstants):
+class ScalarAdvection(Physics, ConvectiveFlux, Constants):
     """
     The constant velocity scalar advection equation in 1D.
     
@@ -21,3 +21,5 @@ class ScalarAdvection(Physics, ConvectiveTerms, PhysicalConstants):
     @property
     def boundary_conditions() -> Enum:
         pass
+
+    def 

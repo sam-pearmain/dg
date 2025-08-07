@@ -49,7 +49,8 @@ class Physics(ABC):
         """Computes the conservatives from the primatives"""
         ...
 
-class ConvectiveTerms(ABC):
+class ConvectiveFlux(ABC):
+    """Convective flux terms within the governing equations"""
     @abstractmethod
     class SupportedConvectiveNumericalFlux(Enum):
         """The supported convective numerical flux functions for a given problem"""
@@ -83,7 +84,8 @@ class ConvectiveTerms(ABC):
         """Computes the convective numerical flux at either inteior or boundary faces"""
         ...
 
-class DiffusiveTerms(ABC):
+class DiffusiveFlux(ABC):
+    """Diffusive flux terms within the governing equations"""
     @abstractmethod
     def compute_diffusive_flux(
         self,
@@ -127,6 +129,7 @@ class DiffusiveTerms(ABC):
         ...
 
 class SourceTerms(ABC): 
+    """Additional sources terms of the governing equations"""
     @abstractmethod
     def compute_source_terms(
         self,
@@ -137,7 +140,8 @@ class SourceTerms(ABC):
         """Computes the sum of all source terms"""
         ...
 
-class PhysicalConstants(ABC):
+class Constants(ABC):
+    """The physical constants of the governing equations"""
     @property
     @abstractmethod
     def constants(self) -> dataclass:
