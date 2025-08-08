@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from jaxtyping import Array, Float64
-from typing import Type, Any
+from typing import List, Any, Type
 from dg.utils.todo import todo
 
 class Physics(ABC):
@@ -13,42 +13,27 @@ class Physics(ABC):
     @property
     @abstractmethod
     def state_variables(self) -> Type[Enum]:
-        """The state variables"""
+        """The state variables, u"""
         ...
 
     @property
     @abstractmethod
-    def boundary_conditions(self) -> Type[Enum]:
-        """The supported boundary conditions, the meshes cell tags must correspond to these"""
-        ...
-
-    @property
-    @abstractmethod
-    def n_state_vars(self) -> int:
-        """Returns the number of state vars of the system"""
-        ...
-
-    @property
-    @abstractmethod
-    def dimensions(self) -> int:
+    def n_dimensions(self) -> int:
         """Returns the number of physical dimensions of the system"""
         ...
 
-    @abstractmethod
-    def conservatives_to_primatives(
-        self, 
-        u_cons: Float64[Array, "n_q n_s"]
-    ) -> Float64[Array, "n_q n_s"]:
-        """Computes the primitives from the conservatives"""
-        ...
+    @property
+    def n_state_variables(self) -> int:
+        """Returns the number of state vars of the system"""
+        return len(self.state_variables)
+    
+    def get_state_variable_names(self) -> List[str]:
+        """Returns a list of the names of all the state variables"""
+        return list(self.state_variables.__members__.keys())
 
-    @abstractmethod
-    def primatives_to_conservatives(
-        self, 
-        u_prim: Float64[Array, "n_q n_s"]
-    ) -> Float64[Array, "n_q n_s"]:
-        """Computes the conservatives from the primatives"""
-        ...
+    def get_state_variable_index(self, var_name: str) -> int:
+        """Returns the index of a specific state variable"""
+        return self.get_state_variable_names().index(var_name)
 
 # -- Convective Flux -- 
 
@@ -149,3 +134,30 @@ class PhysicalConstants:
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise AttributeError("Classes which inherit from PhysicalConstants must remain immutable")
+    
+
+def tests():
+    from enum import Enum, auto
+    from dg.physics.base import Physics
+
+    class DummyStateVars(Enum):
+        Rho = auto()
+        RhoU = auto()
+        RhoV = auto()
+        RhoW = auto()
+        E = auto()
+
+    class DummyPhysics(Physics):
+        @property
+        def state_variables(self) -> Type[Enum]:
+            return DummyStateVars
+        
+        @property
+        def n_dimensions(self) -> int:
+            return 3
+        
+    erm = DummyPhysics()
+    print(erm.get_state_variable_index("RhoU"))
+
+if __name__ == "__main__":
+    tests()
