@@ -1,11 +1,6 @@
-from dataclasses import dataclass
 from enum import Enum
-from typing import Type
+from typing import Any, Type
 from physics.base import Physics, ConvectiveFlux, PhysicalConstants
-
-@dataclass(frozen = True)
-class ScalarAdvectionConstants:
-    a: float = 1.0
 
 class ScalarAdvection(Physics, ConvectiveFlux, PhysicalConstants):
     """
@@ -13,6 +8,9 @@ class ScalarAdvection(Physics, ConvectiveFlux, PhysicalConstants):
     
     ∂u/∂t + a * ∂u/∂x = 0
     """
+    def __init__(self, **kwargs: Any) -> None:
+        PhysicalConstants.__init__(**kwargs)
+
     @property
     def state_variables(self) -> Type[Enum]:
         class StateVariables(Enum):
@@ -24,9 +22,4 @@ class ScalarAdvection(Physics, ConvectiveFlux, PhysicalConstants):
         class BoundaryConditions(Enum):
             Dirichlet = "dirichlet"
             Neumann = "neumann"
-        return BoundaryConditions
-
-    @property
-    def constants(self) -> ScalarAdvectionConstants:
-        return ScalarAdvectionConstants(a = 1.0)
-    
+        return BoundaryConditions    

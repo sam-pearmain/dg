@@ -1,7 +1,5 @@
-import jax.numpy as jnp
-
 from enum import Enum, auto
-from abc import ABC, abstractmethod
+from abc import ABC
 
 class BoundaryType(Enum):
     Wall = auto()

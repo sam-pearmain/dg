@@ -1,3 +1,7 @@
-Be concise with your responses. Can you keep comments to a minimum, code should be understandable without the verbose use of comments. Also try to give me pointers on what I should write/implement rather than just giving me the code upfront.
-The ultimate goal of this project is to write a discontinuous Galerkin solver using the JAX python library for its powerful parallelism, jax.numpy API, and automatic differentiation capability. 
-When declaring variables I want their names to be descriptive, try to avoid single letters unless we are specifically referencing equations.
+Doc strings should be minimal. One sentence maximum. Do not comment on what each of the args/returns/methods/attributes of a function/class are.
+
+Inline comments (#) should be entirely lowercase aside from for proper nouns. Doc strings do not follow this, function doc strings should be all on one line and encapsulated with one sentence, i.e., """xyz""". Class doc strings should take the format """\nxyz\n""". In both cases, doc string should be properly capitalised. 
+
+Never request to automatically change code, make human language suggestions at what should be implemented instead, giving written code examples where necessary. 
+
+On startup, make sure to read through the entire project taking particular note of the overall structure and design.

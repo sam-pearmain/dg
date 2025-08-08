@@ -1,6 +1,5 @@
 
 from abc import ABC, abstractmethod
-from dataclasses import make_dataclass
 from enum import Enum
 from jaxtyping import Array, Float64
 from typing import Type, Any
@@ -140,22 +139,13 @@ class DiffusiveFlux(ABC):
 
 # -- Physical Constants --
 
-class PhysicalConstants(ABC):
+class PhysicalConstants:
     """
     The physical constants of the governing equations
     """
-    @property
-    @abstractmethod
-    def constants(self) -> Any:
-        """This effectively just points to an external immutable dataclass, these constants are hard-coded in"""
-        ...
-
-class _PhysicalConstants:
-    def __init__(self, **kwargs: dict[str, Any]) -> None:
-        object.__setattr__(self, "_constants", kwargs)
-
-    def __getattribute__(self, name: str) -> Any:
-        return self._constants[name]
+    def __init__(self, **kwargs: Any) -> None:
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        raise AttributeError("_PhysicalConstants is immutable")
+        raise AttributeError("Classes which inherit from PhysicalConstants must remain immutable")
