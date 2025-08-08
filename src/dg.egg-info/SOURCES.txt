@@ -17,8 +17,8 @@ src/dg/numerics/timestepping/integrator.py
 src/dg/optimise/__init__.py
 src/dg/physics/__init__.py
 src/dg/physics/base.py
-src/dg/physics/1d/scalar_advection.py
 src/dg/physics/flux/convective.py
+src/dg/physics/oned/scalar_advection.py
 src/dg/solver/__init__.py
 src/dg/solver/solver.py
 src/dg/utils/__init__.py
