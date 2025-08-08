@@ -22,4 +22,4 @@ class ScalarAdvection(Physics, ConvectiveFlux, PhysicalConstants):
         class BoundaryConditions(Enum):
             Dirichlet = "dirichlet"
             Neumann = "neumann"
-        return BoundaryConditions    
+        return BoundaryConditions
