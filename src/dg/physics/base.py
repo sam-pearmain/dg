@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from jaxtyping import Array, Float64
 from typing import Type, Any
-from utils.todo import todo
+from dg.utils.todo import todo
 
 class Physics(ABC):
     """

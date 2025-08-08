@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Any, Type
-from physics.base import Physics, ConvectiveFlux, PhysicalConstants
+from dg.physics.base import Physics, ConvectiveFlux, PhysicalConstants
 
 class ScalarAdvection(Physics, ConvectiveFlux, PhysicalConstants):
     """
@@ -23,3 +23,11 @@ class ScalarAdvection(Physics, ConvectiveFlux, PhysicalConstants):
             Dirichlet = "dirichlet"
             Neumann = "neumann"
         return BoundaryConditions
+
+def tests():
+    from dg.physics.oned import scalar_advection
+
+    system = scalar_advection.ScalarAdvection(a = 1.4)
+
+if __name__ == "__main__":
+    tests()
