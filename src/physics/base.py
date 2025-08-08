@@ -1,8 +1,9 @@
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import make_dataclass
 from enum import Enum
 from jaxtyping import Array, Float64
+from typing import Type, Any
 from utils import todo
 
 class Physics(ABC):
@@ -12,20 +13,21 @@ class Physics(ABC):
     """
     @property
     @abstractmethod
-    def state_variables(self) -> Enum:
+    def state_variables(self) -> Type[Enum]:
         """The state variables"""
         ...
 
     @property
     @abstractmethod
-    def boundary_conditions(self) -> Enum:
+    def boundary_conditions(self) -> Type[Enum]:
         """The supported boundary conditions, the meshes cell tags must correspond to these"""
         ...
 
     @property
+    @abstractmethod
     def n_state_vars(self) -> int:
         """Returns the number of state vars of the system"""
-        return len(self.StateVariables)
+        ...
 
     @property
     @abstractmethod
@@ -49,8 +51,12 @@ class Physics(ABC):
         """Computes the conservatives from the primatives"""
         ...
 
+# -- Convective Flux -- 
+
 class ConvectiveFlux(ABC):
-    """Convective flux terms within the governing equations"""
+    """
+    Convective flux terms within the governing equations
+    """
     @abstractmethod
     class SupportedConvectiveNumericalFlux(Enum):
         """The supported convective numerical flux functions for a given problem"""
@@ -84,8 +90,12 @@ class ConvectiveFlux(ABC):
         """Computes the convective numerical flux at either inteior or boundary faces"""
         ...
 
+# -- Diffusive Flux --
+
 class DiffusiveFlux(ABC):
-    """Diffusive flux terms within the governing equations"""
+    """
+    Diffusive flux terms within the governing equations
+    """
     @abstractmethod
     def compute_diffusive_flux(
         self,
@@ -128,22 +138,24 @@ class DiffusiveFlux(ABC):
         """Computes the diffusive numerical flux on boundary faces"""
         ...
 
-class SourceTerms(ABC): 
-    """Additional sources terms of the governing equations"""
-    @abstractmethod
-    def compute_source_terms(
-        self,
-        u: Array,
-        x: Array,
-        t: float,
-    ) -> Array:
-        """Computes the sum of all source terms"""
-        ...
+# -- Physical Constants --
 
-class Constants():
-    """The physical constants of the governing equations"""
+class PhysicalConstants(ABC):
+    """
+    The physical constants of the governing equations
+    """
     @property
     @abstractmethod
-    def constants(constants: dataclass) -> dataclass:
-        """This effectively just points to an external immutable dataclass"""
-        return constants
+    def constants(self) -> Any:
+        """This effectively just points to an external immutable dataclass, these constants are hard-coded in"""
+        ...
+
+class _PhysicalConstants:
+    def __init__(self, **kwargs: dict[str, Any]) -> None:
+        object.__setattr__(self, "_constants", kwargs)
+
+    def __getattribute__(self, name: str) -> Any:
+        return self._constants[name]
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("_PhysicalConstants is immutable")
