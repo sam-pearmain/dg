@@ -1,15 +1,22 @@
-
 from abc import ABC, abstractmethod
 from enum import Enum
 from jaxtyping import Array, Float64
 from typing import List, Any, Type
-from dg.utils.todo import todo
+
+from dg.physics.flux import ConvectiveNumericalFlux
 
 class Physics(ABC):
     """
-    The physics abstract base class is the skeleton for any weak DG formulation of a governing 
-    advection-diffusion-type PDE
+    The physics abstract base class is the skeleton for any weak DG formulation of a PDE 
+    in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
     """
+
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
     @property
     @abstractmethod
     def state_variables(self) -> Type[Enum]:
@@ -37,7 +44,7 @@ class Physics(ABC):
 
 # -- Convective Flux -- 
 
-class ConvectiveFlux(ABC):
+class ConvectiveTerms(ABC):
     """
     Convective flux terms within the governing equations
     """
@@ -49,52 +56,28 @@ class ConvectiveFlux(ABC):
         """Computes the convective flux"""
         ...
 
-    @abstractmethod
-    def compute_convective_numerical_flux(
-        self,
-        u_l: Float64[Array, "n_fq n_s"],
-        u_r: Float64[Array, "n_fq n_s"],
-        normals: Float64[Array, "n_fq n_d"]
-    ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the convective numerical flux at either inteior or boundary faces"""
-        ...
-
-# -- Physical Constants --
-
-class PhysicalConstants:
-    """
-    The physical constants of the governing equations
-    """
-    def __init__(self, **kwargs: Any) -> None:
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        raise AttributeError("Classes which inherit from PhysicalConstants must remain immutable")
-    
-
 def tests():
     from enum import Enum, auto
     from dg.physics.base import Physics
 
     class DummyStateVars(Enum):
-        Rho = auto()
-        RhoU = auto()
-        RhoV = auto()
-        RhoW = auto()
-        E = auto()
+        U = auto()
 
-    class DummyPhysics(Physics):
+    class DummyPhysics(Physics, ConvectiveTerms):
+        a: float
+
         @property
         def state_variables(self) -> Type[Enum]:
             return DummyStateVars
         
         @property
         def n_dimensions(self) -> int:
-            return 3
+            return 1
         
-    erm = DummyPhysics()
-    print(erm.get_state_variable_index("RhoU"))
+        def compute_convective_flux(self, u: Array) -> Array:
+            return self.a * u
+        
+    erm = DummyPhysics(a = 1.0)
 
 if __name__ == "__main__":
     tests()
