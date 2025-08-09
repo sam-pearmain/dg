@@ -42,11 +42,6 @@ class ConvectiveFlux(ABC):
     Convective flux terms within the governing equations
     """
     @abstractmethod
-    class SupportedConvectiveNumericalFlux(Enum):
-        """The supported convective numerical flux functions for a given problem"""
-        ...
-
-    @abstractmethod
     def compute_convective_flux(
         self,
         u: Float64[Array, "n_q n_s"]
@@ -55,71 +50,13 @@ class ConvectiveFlux(ABC):
         ...
 
     @abstractmethod
-    def compute_convective_flux_face(
-        self, 
-        u: Float64[Array, "n_fq n_s"], 
-        normals: Float64[Array, "n_fq n_d"],
-    ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the convective flux across a face"""
-        todo("will likely need to use einsum so we dot with the correct normals")
-        ...
-
-    @abstractmethod
     def compute_convective_numerical_flux(
         self,
-        u_l: Float64[Array, "n_fq n_s"], 
-        u_r: Float64[Array, "n_fq n_s"], 
+        u_l: Float64[Array, "n_fq n_s"],
+        u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"]
     ) -> Float64[Array, "n_fq n_s"]:
         """Computes the convective numerical flux at either inteior or boundary faces"""
-        ...
-
-# -- Diffusive Flux --
-
-class DiffusiveFlux(ABC):
-    """
-    Diffusive flux terms within the governing equations
-    """
-    @abstractmethod
-    def compute_diffusive_flux(
-        self,
-        u: Float64[Array, "n_q n_s"], 
-        grad_u: Float64[Array, "n_q n_s"]
-    ) -> Float64[Array, "n_q n_s"]:
-        """Computes the diffusive flux within a single element at given quadrature points"""
-        ...
-
-    @abstractmethod
-    def compute_diffusive_flux_face(
-        self, 
-        u: Float64[Array, "n_fq n_s"],
-        grad_u: Float64[Array, "n_fq n_s"], 
-        normals: Float64[Array, "n_fq n_d"],
-    ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the diffusive flux across a face"""
-        ...
-
-    @abstractmethod
-    def compute_diffusive_numerical_flux(
-        self,
-        u_l: Float64[Array, "n_fq n_s"], 
-        u_r: Float64[Array, "n_fq n_s"], 
-        grad_u_l: Float64[Array, "n_fq n_s"], 
-        grad_u_r: Float64[Array, "n_fq n_s"], 
-        normals: Float64[Array, "n_fq n_d"]
-    ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the diffusive numerical flux on interior faces"""
-        ... 
-
-    @abstractmethod
-    def compute_diffusive_numerical_flux_boundary(
-        self,
-        u_l: Float64[Array, "n_fq n_s"], 
-        u_r: Float64[Array, "n_fq n_s"], 
-        grad_u_l: Float64[Array, "n_fq n_s"], 
-        normals: Float64[Array, "n_fq n_d"]
-    ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the diffusive numerical flux on boundary faces"""
         ...
 
 # -- Physical Constants --
