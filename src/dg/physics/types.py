@@ -1,21 +1,13 @@
-from typing import TypeVar, Annotated
-from dg.physics.base import Physics, ConvectiveTerms, DiffusiveTerms
+from typing import TypeVar, Protocol
+from jaxtyping import Float64, Array
 
-ConvectivePhysics = TypeVar(
-    "ConvectivePhysics", 
-    Physics,
-    ConvectiveTerms, 
-)
+class ConvectivePhysics(Protocol):
+    def compute_convective_flux(
+        self,
+        u: Float64[Array, "n_q n_s"]
+    ) -> Float64[Array, "n_q n_s"]:
+        """Computes the convective flux, F(u)"""
+        ...
 
-DiffusivePhysics = TypeVar(
-    "DiffusivePhysics", 
-    Physics,
-    DiffusiveTerms, 
-)
-
-ConvectiveDiffusivePhysics = TypeVar(
-    "ConvectiveDiffusivePhysics", 
-    Physics,
-    ConvectiveTerms, 
-    DiffusiveTerms,
-)
+    def has_convective_terms(self) -> bool:
+        return True

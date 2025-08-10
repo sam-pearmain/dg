@@ -3,7 +3,7 @@ from jax import jit
 from abc import ABC, abstractmethod
 from enum import Enum
 from jaxtyping import Array, Float64
-from typing import List, Any, Tuple, Type
+from typing import List, Any, Tuple, Type, Protocol
 
 from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
 from dg.physics.types import ConvectivePhysics, DiffusivePhysics, ConvectiveDiffusivePhysics
@@ -166,7 +166,7 @@ def tests():
             return jnp.asarray(1)
         
         def compatible_physics_types(self) -> Tuple[type[Physics], ...]:
-            return (DummyPhysics,)
+            return (DummyPhysics, )
 
     class LaxFriedrichsFlux(ConvectiveNumericalFlux):
         def compute_convective_numerical_flux(
@@ -177,10 +177,17 @@ def tests():
                 normals: Array
             ) -> Array:
             return 0.5 * (physics.compute_convective_flux(u_l))
+        
+        def compatible_physics_types(self) -> Tuple[type[Physics]]:
+            return (DummyPhysics, )
 
     erm = DummyPhysics(
         UpwindFlux(),
         a = 1.0
+    )
+
+    erm2 = DummyPhysics(
+        LaxFriedrichsFlux(), 
     )
 
 if __name__ == "__main__":
