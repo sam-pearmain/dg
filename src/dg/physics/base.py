@@ -3,18 +3,18 @@ from jax import jit
 from abc import ABC, abstractmethod
 from enum import Enum
 from jaxtyping import Array, Float64
-from typing import List, Any, Type
+from typing import List, Any, Tuple, Type
 
-from dg.physics.flux import ConvectiveNumericalFlux
+from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
 
 class Physics(ABC):
     """
     The physics abstract base class is the skeleton for any weak DG formulation of a PDE 
-    in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
+    in the form: ∂u/∂t + ∇F_conv(u) + ∇ F_diff(u, ∇u) = S
     """
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, **physical_constants: Any) -> None:
         super().__init__()
-        for key, value in kwargs.items():
+        for key, value in physical_constants.items():
             setattr(self, key, value)
 
     @property
@@ -48,7 +48,7 @@ class Physics(ABC):
     def has_diffusive_terms(self) -> bool:
         return False
 
-# -- convective flux -- 
+# -- convective terms -- 
 
 class ConvectiveTerms(ABC):
     """
@@ -58,10 +58,11 @@ class ConvectiveTerms(ABC):
 
     def __init__(
             self, 
-            conv_num_flux_func: ConvectiveNumericalFlux
+            convective_numerical_flux: ConvectiveNumericalFlux, 
+            **kwargs: Any
         ) -> None:
-        super().__init__()
-        self._convective_numerical_flux_function = conv_num_flux_func
+        super().__init__(**kwargs)
+        self._convective_numerical_flux_function = convective_numerical_flux
 
     @jit
     @abstractmethod
@@ -87,6 +88,50 @@ class ConvectiveTerms(ABC):
     def has_convective_terms(self) -> bool:
         return True
 
+# -- diffusive terms --
+
+class DiffusiveTerms(ABC):
+    """
+    Diffusive flux terms within the governing equations
+    """
+    _diffusive_numerical_flux_function: DiffusiveNumericalFlux
+
+    def __init__(
+            self, 
+            diffusive_numerical_flux: DiffusiveNumericalFlux, 
+            **kwargs: Any
+        ) -> None:
+        super().__init__(**kwargs)
+        self._diffusive_numerical_flux_function = diffusive_numerical_flux
+
+    @jit
+    @abstractmethod
+    def compute_diffusive_flux(
+        self,
+        u: Float64[Array, "n_q n_s"]
+    ) -> Float64[Array, "n_q n_s"]:
+        """Computes the diffusive flux, F(u)"""
+        ...
+
+    def compute_diffusive_numerical_flux(
+        self,
+        physics: Physics,
+        u_l: Float64[Array, "n_fq n_s"],
+        u_r: Float64[Array, "n_fq n_s"],
+        grad_u_l: Float64[Array, "n_fq n_s"],
+        grad_u_r: Float64[Array, "n_fq n_s"],
+        normals: Float64[Array, "n_fq n_d"]
+    ) -> Float64[Array, "n_fq n_s"]:
+        """Computes the diffusive numerical flux at either inteior or boundary faces"""
+        return self._diffusive_numerical_flux_function(
+            physics, u_l, u_r, grad_u_l, grad_u_r, normals
+        )
+
+    def has_diffusive_terms(self) -> bool:
+        return True
+
+# -- tests --
+
 def tests():
     import jax.numpy as jnp
     from enum import Enum, auto
@@ -109,7 +154,20 @@ def tests():
         def compute_convective_flux(self, u: Array) -> Array:
             return self.a * u
     
-    class Upwind(ConvectiveNumericalFlux):
+    class UpwindFlux(ConvectiveNumericalFlux):
+        def compute_convective_numerical_flux(
+                self, 
+                physics: Type[ConvectiveTerms], 
+                u_l: Array, 
+                u_r: Array, 
+                normals: Array
+            ) -> Array:
+            return jnp.asarray(1)
+        
+        def compatible_physics_types(self) -> Tuple[type[Physics], ...]:
+            return (DummyPhysics,)
+
+    class LaxFriedrichsFlux(ConvectiveNumericalFlux):
         def compute_convective_numerical_flux(
                 self, 
                 physics: Physics, 
@@ -117,9 +175,12 @@ def tests():
                 u_r: Array, 
                 normals: Array
             ) -> Array:
-            return jnp.asarray(1)
+            return 0.5 * (physics.flux)
 
-    erm = DummyPhysics(a = 1.0)
+    erm = DummyPhysics(
+        UpwindFlux(),
+        a = 1.0
+    )
 
 if __name__ == "__main__":
     tests()
