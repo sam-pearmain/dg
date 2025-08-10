@@ -3,13 +3,14 @@ from typing import Any, Tuple, Type
 from jaxtyping import Array, Float64
 
 from dg.physics.base import Physics
+from dg.physics.types import ConvectivePhysics, DiffusivePhysics, ConvectiveDiffusivePhysics
 
 # -- convective numerical flux
 
 class ConvectiveNumericalFlux(ABC):
     def __call__(
         self,
-        physics: Physics,
+        physics: ConvectivePhysics,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"]
@@ -21,7 +22,7 @@ class ConvectiveNumericalFlux(ABC):
     @abstractmethod
     def compute_convective_numerical_flux(
         self,
-        physics: Physics,
+        physics: ConvectivePhysics,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"]
@@ -39,7 +40,7 @@ class ConvectiveNumericalFlux(ABC):
 class DiffusiveNumericalFlux(ABC):
     def __call__(
         self,
-        physics: Physics,
+        physics: DiffusivePhysics,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         grad_u_l: Float64[Array, "n_fq n_s"],
@@ -53,7 +54,7 @@ class DiffusiveNumericalFlux(ABC):
     @abstractmethod
     def compute_diffusive_numerical_flux(
         self,
-        physics: Physics,
+        physics: DiffusivePhysics,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         grad_u_l: Float64[Array, "n_fq n_s"],

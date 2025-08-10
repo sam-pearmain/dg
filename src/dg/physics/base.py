@@ -6,6 +6,7 @@ from jaxtyping import Array, Float64
 from typing import List, Any, Tuple, Type
 
 from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
+from dg.physics.types import ConvectivePhysics, DiffusivePhysics, ConvectiveDiffusivePhysics
 
 class Physics(ABC):
     """
@@ -75,7 +76,7 @@ class ConvectiveTerms(ABC):
 
     def compute_convective_numerical_flux(
         self,
-        physics: Physics,
+        physics: ConvectivePhysics,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"]
@@ -115,7 +116,7 @@ class DiffusiveTerms(ABC):
 
     def compute_diffusive_numerical_flux(
         self,
-        physics: Physics,
+        physics: DiffusivePhysics,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         grad_u_l: Float64[Array, "n_fq n_s"],
@@ -157,7 +158,7 @@ def tests():
     class UpwindFlux(ConvectiveNumericalFlux):
         def compute_convective_numerical_flux(
                 self, 
-                physics: Type[ConvectiveTerms], 
+                physics: ConvectivePhysics, 
                 u_l: Array, 
                 u_r: Array, 
                 normals: Array
@@ -170,12 +171,12 @@ def tests():
     class LaxFriedrichsFlux(ConvectiveNumericalFlux):
         def compute_convective_numerical_flux(
                 self, 
-                physics: Physics, 
+                physics: ConvectivePhysics, 
                 u_l: Array, 
                 u_r: Array, 
                 normals: Array
             ) -> Array:
-            return 0.5 * (physics.flux)
+            return 0.5 * (physics.compute_convective_flux(u_l))
 
     erm = DummyPhysics(
         UpwindFlux(),

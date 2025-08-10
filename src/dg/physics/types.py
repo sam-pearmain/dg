@@ -1,20 +1,21 @@
 from typing import TypeVar, Annotated
 from dg.physics.base import Physics, ConvectiveTerms, DiffusiveTerms
 
-_ConvectivePhysics = TypeVar(
-    "_ConvectivePhysics", 
+ConvectivePhysics = TypeVar(
+    "ConvectivePhysics", 
+    Physics,
     ConvectiveTerms, 
-    Physics
 )
 
-_DiffusivePhysics = TypeVar(
-    "_DiffusivePhysics", 
+DiffusivePhysics = TypeVar(
+    "DiffusivePhysics", 
+    Physics,
     DiffusiveTerms, 
-    Physics
 )
 
-_ConvectiveDiffusivePhysics = TypeVar(
-    "_ConvectiveDiffusivePhysics", 
+ConvectiveDiffusivePhysics = TypeVar(
+    "ConvectiveDiffusivePhysics", 
+    Physics,
     ConvectiveTerms, 
-    DiffusiveTerms
+    DiffusiveTerms,
 )
