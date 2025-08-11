@@ -171,12 +171,17 @@ def tests():
     class LaxFriedrichsFlux(ConvectiveNumericalFlux):
         def compute_convective_numerical_flux(
                 self, 
-                physics: ConvectivePhysics, 
+                physics: DummyPhysics, 
                 u_l: Array, 
                 u_r: Array, 
                 normals: Array
             ) -> Array:
-            return 0.5 * (physics.compute_convective_flux(u_l))
+            return 0.5 * (
+                physics.compute_convective_flux(u_l) +
+                physics.compute_convective_flux(u_r) -
+                jnp.abs(physics.a * normals) *
+                
+            )
         
         def compatible_physics_types(self) -> Tuple[type[Physics]]:
             return (DummyPhysics, )
