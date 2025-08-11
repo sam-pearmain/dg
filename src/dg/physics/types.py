@@ -14,6 +14,19 @@ class ConvectiveDiffusivePDE(ConvectiveTerms, DiffusiveTerms, PDE):
     """A generic type for convection-diffusion PDEs"""
     pass
 
-ConvectivePDEType = TypeVar("ConvectivePDEType", bound = ConvectivePDE)
-DiffusivePDEType = TypeVar("DiffusivePDEType", bound = DiffusivePDE)
-ConvectiveDiffusivePDEType = TypeVar("ConvectiveDiffusivePDEType", bound = ConvectiveDiffusivePDE)
+ConvectivePDEType = TypeVar(
+    "ConvectivePDEType", 
+    bound = ConvectivePDE, 
+    contravariant = True,
+)
+
+DiffusivePDEType = TypeVar(
+    "DiffusivePDEType", 
+    bound = DiffusivePDE,
+    contravariant = True,   
+)
+ConvectiveDiffusivePDEType = TypeVar(
+    "ConvectiveDiffusivePDEType", 
+    bound = ConvectiveDiffusivePDE, 
+    contravariant = True    
+)
