@@ -6,28 +6,28 @@ from jaxtyping import Array, Float64
 from typing import List, Any, Tuple, Type, Protocol
 
 from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
-from dg.physics.types import ConvectivePhysics, DiffusivePhysics, ConvectiveDiffusivePhysics
+from dg.physics.types import ConvectivePDE, DiffusivePDE, ConvectivePDEType, DiffusivePDEType
 
-class Physics(ABC):
+class PDE(ABC):
     """
     The physics abstract base class is the skeleton for any weak DG formulation of a PDE 
-    in the form: ∂u/∂t + ∇F_conv(u) + ∇ F_diff(u, ∇u) = S
+    in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
     """
-    def __init__(self, **physical_constants: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__()
-        for key, value in physical_constants.items():
+        for key, value in kwargs.items():
             setattr(self, key, value)
-
-    @property
-    @abstractmethod
-    def state_variables(self) -> Type[Enum]:
-        """The state variables, u"""
-        ...
 
     @property
     @abstractmethod
     def n_dimensions(self) -> int:
         """Returns the number of physical dimensions of the system"""
+        ...
+
+    @property
+    @abstractmethod
+    def state_variables(self) -> Type[Enum]:
+        """The state variables, u"""
         ...
 
     @property
@@ -53,9 +53,9 @@ class Physics(ABC):
 
 class ConvectiveTerms(ABC):
     """
-    Convective flux terms within the governing equations
+    A mixin class for PDEs with convective terms
     """
-    _convective_numerical_flux_function: ConvectiveNumericalFlux
+    _convective_numerical_flux: ConvectiveNumericalFlux
 
     def __init__(
             self, 
@@ -63,7 +63,7 @@ class ConvectiveTerms(ABC):
             **kwargs: Any
         ) -> None:
         super().__init__(**kwargs)
-        self._convective_numerical_flux_function = convective_numerical_flux
+        self._convective_numerical_flux = convective_numerical_flux
 
     @jit
     @abstractmethod
@@ -76,13 +76,13 @@ class ConvectiveTerms(ABC):
 
     def compute_convective_numerical_flux(
         self,
-        physics: ConvectivePhysics,
+        physics: ConvectivePDEType,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"]
     ) -> Float64[Array, "n_fq n_s"]:
         """Computes the convective numerical flux at either inteior or boundary faces"""
-        return self._convective_numerical_flux_function(
+        return self._convective_numerical_flux(
             physics, u_l, u_r, normals
         )
 
@@ -93,9 +93,9 @@ class ConvectiveTerms(ABC):
 
 class DiffusiveTerms(ABC):
     """
-    Diffusive flux terms within the governing equations
+    A mixin class for PDEs with diffusive terms
     """
-    _diffusive_numerical_flux_function: DiffusiveNumericalFlux
+    _diffusive_numerical_flux: DiffusiveNumericalFlux
 
     def __init__(
             self, 
@@ -103,20 +103,21 @@ class DiffusiveTerms(ABC):
             **kwargs: Any
         ) -> None:
         super().__init__(**kwargs)
-        self._diffusive_numerical_flux_function = diffusive_numerical_flux
+        self._diffusive_numerical_flux = diffusive_numerical_flux
 
     @jit
     @abstractmethod
     def compute_diffusive_flux(
         self,
-        u: Float64[Array, "n_q n_s"]
+        u: Float64[Array, "n_q n_s"],
+        grad_u: Float64[Array, "n_q n_s"],
     ) -> Float64[Array, "n_q n_s"]:
-        """Computes the diffusive flux, F(u)"""
+        """Computes the diffusive flux, F_diff(u)"""
         ...
 
     def compute_diffusive_numerical_flux(
         self,
-        physics: DiffusivePhysics,
+        physics: DiffusivePDEType,
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         grad_u_l: Float64[Array, "n_fq n_s"],
@@ -124,7 +125,7 @@ class DiffusiveTerms(ABC):
         normals: Float64[Array, "n_fq n_d"]
     ) -> Float64[Array, "n_fq n_s"]:
         """Computes the diffusive numerical flux at either inteior or boundary faces"""
-        return self._diffusive_numerical_flux_function(
+        return self._diffusive_numerical_flux(
             physics, u_l, u_r, grad_u_l, grad_u_r, normals
         )
 
@@ -136,9 +137,8 @@ class DiffusiveTerms(ABC):
 def tests():
     import jax.numpy as jnp
     from enum import Enum, auto
-    from dg.physics.base import ConvectiveTerms, Physics
 
-    class DummyPhysics(ConvectiveTerms, Physics):
+    class DummyPhysics(ConvectivePDE):
         a: float
 
         @property
@@ -155,21 +155,12 @@ def tests():
         def compute_convective_flux(self, u: Array) -> Array:
             return self.a * u
     
-    class UpwindFlux(ConvectiveNumericalFlux):
-        def compute_convective_numerical_flux(
-                self, 
-                physics: ConvectivePhysics, 
-                u_l: Array, 
-                u_r: Array, 
-                normals: Array
-            ) -> Array:
-            return jnp.asarray(1)
-        
-        def compatible_physics_types(self) -> Tuple[type[Physics], ...]:
-            return (DummyPhysics, )
+    class UpwindFlux(ConvectiveNumericalFlux[DummyPhysics]):
+        def __call__(self, physics: DummyPhysics, u_l: Array, u_r: Array, normals: Array) -> Array:
+            return u_l
 
     class LaxFriedrichsFlux(ConvectiveNumericalFlux):
-        def compute_convective_numerical_flux(
+        def __call__(
                 self, 
                 physics: DummyPhysics, 
                 u_l: Array, 
@@ -179,12 +170,8 @@ def tests():
             return 0.5 * (
                 physics.compute_convective_flux(u_l) +
                 physics.compute_convective_flux(u_r) -
-                jnp.abs(physics.a * normals) *
-                
+                jnp.abs(physics.a * normals) * 2
             )
-        
-        def compatible_physics_types(self) -> Tuple[type[Physics]]:
-            return (DummyPhysics, )
 
     erm = DummyPhysics(
         UpwindFlux(),
@@ -192,7 +179,8 @@ def tests():
     )
 
     erm2 = DummyPhysics(
-        LaxFriedrichsFlux(), 
+        LaxFriedrichsFlux(),
+        a = 1.0
     )
 
 if __name__ == "__main__":
