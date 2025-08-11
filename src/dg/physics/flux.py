@@ -1,7 +1,7 @@
 from typing import Protocol, Type, Generic
 from jaxtyping import Array, Float64
 
-from dg.physics.types import ConvectivePDEType, DiffusivePDEType
+from dg.physics.interfaces import ConvectivePDEType, DiffusivePDEType
 
 # -- convective numerical flux
 

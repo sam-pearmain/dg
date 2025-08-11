@@ -6,14 +6,15 @@ from jaxtyping import Array, Float64
 from typing import List, Any, Type, Generic
 
 from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
-from dg.physics.types import ConvectivePDE, DiffusivePDE, ConvectivePDEType, DiffusivePDEType
+from dg.physics.constants import PhysicalConstant
+from dg.physics.interfaces import ConvectivePDE, DiffusivePDE, ConvectivePDEType, DiffusivePDEType
 
 class PDE(ABC):
     """
     The physics abstract base class is the skeleton for any weak DG formulation of a PDE 
     in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
     """
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: PhysicalConstant) -> None:
         super().__init__()
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -139,7 +140,7 @@ def tests():
     from enum import Enum, auto
 
     class DummyPhysics(ConvectivePDE):
-        a: float
+        a = PhysicalConstant(1.2)
 
         @property
         def state_variables(self) -> Type[Enum]:
@@ -175,12 +176,10 @@ def tests():
 
     erm = DummyPhysics(
         UpwindFlux(),
-        a = 1.0
     )
 
     erm2 = DummyPhysics(
         LaxFriedrichsFlux(),
-        a = 1.0
     )
 
 if __name__ == "__main__":
