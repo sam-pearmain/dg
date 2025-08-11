@@ -1,5 +1,4 @@
-from typing import TypeVar, Protocol, Generic
-from jaxtyping import Array, Float64
+from typing import TypeVar
 from dg.physics.base import PDE, ConvectiveTerms, DiffusiveTerms
 
 class ConvectivePDE(ConvectiveTerms, PDE):

@@ -11,13 +11,23 @@ from dg.physics.interfaces import ConvectivePDE, DiffusivePDE, ConvectivePDEType
 
 class PDE(ABC):
     """
-    The physics abstract base class is the skeleton for any weak DG formulation of a PDE 
-    in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
+    The immutable PDE abstract base class is the skeleton for any weak DG formulation of a  
+    convection-diffusion problem in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
     """
     def __init__(self, **kwargs: PhysicalConstant) -> None:
         super().__init__()
+
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+        self._locked = True
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        # to ensure immutability for jax.jit purposes we raise an error if we try to modify an attribute
+        if getattr(self, "_locked", True):
+            raise AttributeError("Cannot modify attributes of Type[PDE] once initialised")
+        
+        super().__setattr__(name, value)
 
     @property
     @abstractmethod
@@ -60,7 +70,7 @@ class ConvectiveTerms(Generic[ConvectivePDEType], ABC):
 
     def __init__(
             self, 
-            convective_numerical_flux: ConvectiveNumericalFlux[ConvectivePDEType], 
+            convective_numerical_flux: "ConvectiveNumericalFlux[ConvectivePDEType]", 
             **kwargs: Any
         ) -> None:
         super().__init__(**kwargs)
@@ -157,10 +167,16 @@ def tests():
             return self.a * u
     
     class UpwindFlux(ConvectiveNumericalFlux[DummyPhysics]):
-        def __call__(self, physics: DummyPhysics, u_l: Array, u_r: Array, normals: Array) -> Array:
+        def __call__(
+                self, 
+                physics: DummyPhysics, 
+                u_l: Array, 
+                u_r: Array, 
+                normals: Array
+            ) -> Array:
             return u_l
 
-    class LaxFriedrichsFlux(ConvectiveNumericalFlux):
+    class LaxFriedrichsFlux(ConvectiveNumericalFlux[DummyPhysics]):
         def __call__(
                 self, 
                 physics: DummyPhysics, 
