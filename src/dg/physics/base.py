@@ -3,11 +3,10 @@ from jax import jit
 from abc import ABC, abstractmethod
 from enum import Enum
 from jaxtyping import Array, Float64
-from typing import List, Any, Type, Generic
+from typing import List, Any, Type, TypeVar, Generic
 
-from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
 from dg.physics.constants import PhysicalConstant
-from dg.physics.interfaces import ConvectivePDEType, DiffusivePDEType
+from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
 
 class PDE(ABC):
     """
@@ -62,15 +61,15 @@ class PDE(ABC):
 
 # -- convective terms -- 
 
-class ConvectiveTerms(Generic[ConvectivePDEType], ABC):
+class ConvectiveTerms(Generic['ConvectivePDEType'], ABC):
     """
     A mixin class for PDEs with convective terms
     """
-    _convective_numerical_flux: ConvectiveNumericalFlux[ConvectivePDEType]
+    _convective_numerical_flux: ConvectiveNumericalFlux['ConvectivePDEType']
 
     def __init__(
             self, 
-            convective_numerical_flux: "ConvectiveNumericalFlux[ConvectivePDEType]", 
+            convective_numerical_flux: ConvectiveNumericalFlux['ConvectivePDEType'], 
             **kwargs: Any
         ) -> None:
         super().__init__(**kwargs)
@@ -87,7 +86,7 @@ class ConvectiveTerms(Generic[ConvectivePDEType], ABC):
 
     def compute_convective_numerical_flux(
         self,
-        physics: ConvectivePDEType,
+        physics: 'ConvectivePDEType',
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"]
@@ -102,15 +101,15 @@ class ConvectiveTerms(Generic[ConvectivePDEType], ABC):
 
 # -- diffusive terms --
 
-class DiffusiveTerms(Generic[DiffusivePDEType], ABC):
+class DiffusiveTerms(Generic['DiffusivePDEType'], ABC):
     """
     A mixin class for PDEs with diffusive terms
     """
-    _diffusive_numerical_flux: DiffusiveNumericalFlux[DiffusivePDEType]
+    _diffusive_numerical_flux: DiffusiveNumericalFlux['DiffusivePDEType']
 
     def __init__(
             self, 
-            diffusive_numerical_flux: DiffusiveNumericalFlux[DiffusivePDEType], 
+            diffusive_numerical_flux: DiffusiveNumericalFlux['DiffusivePDEType'], 
             **kwargs: Any
         ) -> None:
         super().__init__(**kwargs)
@@ -128,7 +127,7 @@ class DiffusiveTerms(Generic[DiffusivePDEType], ABC):
 
     def compute_diffusive_numerical_flux(
         self,
-        physics: DiffusivePDEType,
+        physics: 'DiffusivePDEType',
         u_l: Float64[Array, "n_fq n_s"],
         u_r: Float64[Array, "n_fq n_s"],
         grad_u_l: Float64[Array, "n_fq n_s"],
@@ -143,12 +142,42 @@ class DiffusiveTerms(Generic[DiffusivePDEType], ABC):
     def has_diffusive_terms(self) -> bool:
         return True
 
+# -- typing -- 
+
+class ConvectivePDE(ConvectiveTerms, PDE):
+    """A generic type for convective PDEs"""
+    pass
+
+class DiffusivePDE(DiffusiveTerms, PDE):
+    """A generic type for diffusive PDEs"""
+    pass
+
+class ConvectiveDiffusivePDE(ConvectivePDE, DiffusivePDE):
+    """A generic type for convection-diffusion PDEs"""
+    pass
+
+ConvectivePDEType = TypeVar(
+    "ConvectivePDEType", 
+    bound = ConvectivePDE, 
+    contravariant = True,
+)
+
+DiffusivePDEType = TypeVar(
+    "DiffusivePDEType", 
+    bound = DiffusivePDE,
+    contravariant = True,   
+)
+ConvectiveDiffusivePDEType = TypeVar(
+    "ConvectiveDiffusivePDEType", 
+    bound = ConvectiveDiffusivePDE, 
+    contravariant = True    
+)
+
 # -- tests --
 
 def tests():
     import jax.numpy as jnp
     from enum import Enum, auto
-    from dg.physics.interfaces import ConvectivePDE
 
     class DummyPhysics(ConvectivePDE):
         a = PhysicalConstant(1.2)
