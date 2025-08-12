@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Type, Tuple, TypeVar
 
@@ -59,12 +60,11 @@ class Convective(Trait):
 class Diffusive(Trait):
     def has_diffusive_terms(self) -> bool: return True
 
-# trait combinations
 class ConvectivePDETrait(Convective, PDE, Trait): ...
 class DiffusivePDETrait(Diffusive, PDE, Trait): ... 
 class ConvectiveDiffusivePDETrait(Convective, Diffusive, PDE, Trait): ...
 
-C = TypeVar("C", bound = ConvectivePDETrait)
+C = TypeVar('C', bound = ConvectivePDETrait)
 class ConvectiveFlux(Diffusive, Trait[C]): # type: ignore
     """A trait for PDEs with convective analytical flux"""
     @jit
@@ -76,7 +76,7 @@ class ConvectiveFlux(Diffusive, Trait[C]): # type: ignore
         """Computes the convective flux, F_conv(u)"""
         ...
 
-D = TypeVar("D", bound = DiffusivePDETrait)
+D = TypeVar('D', bound = DiffusivePDETrait)
 class DiffusiveFlux(Convective, Trait[D]): # type: ignore
     @jit
     def compute_diffusive_flux(
@@ -88,7 +88,7 @@ class DiffusiveFlux(Convective, Trait[D]): # type: ignore
         """Computes the diffusive analytical flux, F_diff(u)"""
         ...
 
-C = TypeVar("C", bound = ConvectivePDETrait)
+C = TypeVar('C', bound = ConvectivePDETrait)
 class ConvectiveNumericalFlux(Convective, Trait[C]): # type: ignore
     @jit
     def compute_convective_numerical_flux(
@@ -101,7 +101,7 @@ class ConvectiveNumericalFlux(Convective, Trait[C]): # type: ignore
         """Computes the convective numerical flux across an element's face"""
         ...
 
-D = TypeVar("D", bound = DiffusivePDETrait)
+D = TypeVar('D', bound = DiffusivePDETrait)
 class DiffusiveNumericalFlux(Diffusive, Trait[D]): # type: ignore
     @jit
     def compute_diffusive_numerical_flux(

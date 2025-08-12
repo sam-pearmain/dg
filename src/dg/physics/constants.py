@@ -2,7 +2,7 @@ from typing import Generic, TypeVar
 
 T = TypeVar('T')
 
-class PhysicalConstant(Generic[T]):
+class Constant(Generic[T]):
     def __init__(self, value: T) -> None:
         self._value = value
 
@@ -10,7 +10,9 @@ class PhysicalConstant(Generic[T]):
         return self._value
 
     def __set__(self, instance, owner):
-        raise AttributeError("Cannot mutate a PhysicalConstant")
+        raise AttributeError("cannot mutate a constant")
+
+class PhysicalConstant(Constant): ...
 
 def tests():
     import timeit
