@@ -7,7 +7,7 @@ from typing import List, Any, Type, Generic
 
 from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
 from dg.physics.constants import PhysicalConstant
-from dg.physics.interfaces import ConvectivePDE, DiffusivePDE, ConvectivePDEType, DiffusivePDEType
+from dg.physics.interfaces import ConvectivePDEType, DiffusivePDEType
 
 class PDE(ABC):
     """
@@ -148,6 +148,7 @@ class DiffusiveTerms(Generic[DiffusivePDEType], ABC):
 def tests():
     import jax.numpy as jnp
     from enum import Enum, auto
+    from dg.physics.interfaces import ConvectivePDE
 
     class DummyPhysics(ConvectivePDE):
         a = PhysicalConstant(1.2)
