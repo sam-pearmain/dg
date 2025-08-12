@@ -1,14 +1,13 @@
-from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Type, Tuple, TypeVar, ClassVar
+from typing import Any, Dict, List, Type, Tuple, TypeVar
 
 from jax import jit
 from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
-from dg.utils.traits import Trait
+from dg.utils.traits import Trait, PyTree
 
-class PDE(Trait):
+class PDE(PyTree, Trait):
     """The core PDE trait"""
     _is_init: bool = False
 
@@ -47,6 +46,13 @@ class PDE(Trait):
     @classmethod
     def tree_unflatten(cls, aux_data: Dict[str, Any], children: List[Any]) -> 'PDE': ...
 
+    def has_convective_terms(self) -> bool: 
+        return False
+
+    def has_diffusive_terms(self) -> bool: 
+        return False
+
+
 class Convective(Trait):
     def has_convective_terms(self) -> bool: return True
 
@@ -62,7 +68,7 @@ C = TypeVar("C", bound = ConvectivePDETrait)
 class ConvectiveFlux(Diffusive, Trait[C]): # type: ignore
     """A trait for PDEs with convective analytical flux"""
     @jit
-    def compute_diffusive_flux(
+    def compute_convective_flux(
         self,
         physics: C, 
         u: Float64[Array, "n_q n_s"],
@@ -75,6 +81,7 @@ class DiffusiveFlux(Convective, Trait[D]): # type: ignore
     @jit
     def compute_diffusive_flux(
         self,
+        physics: D, 
         u: Float64[Array, "n_q n_s"],
         grad_u: Float64[Array, "n_q n_s"],
     ) -> Float64[Array, "n_q n_s"]:
@@ -82,7 +89,7 @@ class DiffusiveFlux(Convective, Trait[D]): # type: ignore
         ...
 
 C = TypeVar("C", bound = ConvectivePDETrait)
-class ConvectiveNumericalFlux(Trait[C]): # type: ignore
+class ConvectiveNumericalFlux(Convective, Trait[C]): # type: ignore
     @jit
     def compute_convective_numerical_flux(
         self, 
@@ -95,9 +102,9 @@ class ConvectiveNumericalFlux(Trait[C]): # type: ignore
         ...
 
 D = TypeVar("D", bound = DiffusivePDETrait)
-class DiffusiveNumericalFlux(Trait[D]): # type: ignore
+class DiffusiveNumericalFlux(Diffusive, Trait[D]): # type: ignore
     @jit
-    def compute_convective_numerical_flux(
+    def compute_diffusive_numerical_flux(
         self, 
         physics: D, 
         u_l: Float64[Array, "n_fq n_s"], 
