@@ -132,7 +132,7 @@ class DiffusiveTerms(Generic['DiffusivePDEType'], ABC):
         u_r: Float64[Array, "n_fq n_s"],
         grad_u_l: Float64[Array, "n_fq n_s"],
         grad_u_r: Float64[Array, "n_fq n_s"],
-        normals: Float64[Array, "n_fq n_d"]
+        normals: Float64[Array, "n_fq n_d"],
     ) -> Float64[Array, "n_fq n_s"]:
         """Computes the diffusive numerical flux at either inteior or boundary faces"""
         return self._diffusive_numerical_flux(

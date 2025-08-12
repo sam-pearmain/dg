@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, TYPE_CHECKING
 from jaxtyping import Array, Float64
 
 from dg.physics.base import ConvectivePDEType, DiffusivePDEType
