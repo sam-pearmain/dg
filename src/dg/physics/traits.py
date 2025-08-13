@@ -53,7 +53,6 @@ class PDE(PyTree, Trait):
     def has_diffusive_terms(self) -> bool: 
         return False
 
-
 class Convective(Trait):
     def has_convective_terms(self) -> bool: return True
 
