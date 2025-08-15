@@ -1,30 +1,14 @@
-from typing import Protocol, TYPE_CHECKING
+from typing import TypeVar
 from jaxtyping import Array, Float64
 
-from dg.physics.base import ConvectivePDEType, DiffusivePDEType
+from dg.utils.traits import Trait
+from dg.physics.traits import (
+    Convective, Diffusive, ConvectiveFlux, DiffusiveFlux, 
+    ConvectiveNumericalFlux, DiffusiveNumericalFlux, 
+    ConvectivePDETrait, DiffusivePDETrait
+)
 
-# -- convective numerical flux
-
-class ConvectiveNumericalFlux(Protocol[ConvectivePDEType]):
-    def __call__(
-        self,
-        physics: ConvectivePDEType,
-        u_l: Float64[Array, "n_fq n_s"],
-        u_r: Float64[Array, "n_fq n_s"],
-        normals: Float64[Array, "n_fq n_d"]
-    ) -> Float64[Array, "n_fq n_s"]:
-        ...
-
-# -- diffusive numerical flux --
-
-class DiffusiveNumericalFlux(Protocol[DiffusivePDEType]):
-    def __call__(
-        self,
-        physics: DiffusivePDEType,
-        u_l: Float64[Array, "n_fq n_s"],
-        u_r: Float64[Array, "n_fq n_s"],
-        grad_u_l: Float64[Array, "n_fq n_s"],
-        grad_u_r: Float64[Array, "n_fq n_s"],
-        normals: Float64[Array, "n_fq n_d"]
-    ) -> Float64[Array, "n_fq n_s"]:
-        ...
+C = TypeVar('C', bound = ConvectivePDETrait)
+class ConvectiveTerms(ConvectiveFlux[C], ConvectiveNumericalFlux[C], Trait[C]):
+    def __init__(self) -> None:
+        super().__init__()

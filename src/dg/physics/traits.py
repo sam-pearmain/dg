@@ -1,16 +1,23 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Type, Tuple, TypeVar
+from typing import Any, Dict, List, Type, Tuple, TypeVar, Mapping, Generic, Union
 
 from jax import jit
 from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
 from dg.utils.traits import Trait, PyTree
+from dg.utils.uninit import Uninit
 
 class PDE(PyTree, Trait):
     """The core PDE trait"""
     _is_init: bool = False
+
+    class StateVariables(Enum):
+        ...
+
+    class Boundaries(Enum):
+        ...
 
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds:
@@ -28,13 +35,13 @@ class PDE(PyTree, Trait):
     def n_dimensions(self) -> int: ...
 
     @property
-    def state_variables(self) -> Type[Enum]: ...
+    def state_variables(self) -> Type[StateVariables]: return self.StateVariables
 
     @property
     def n_state_variables(self) -> int: return len(self.state_variables)
 
     @property
-    def boundaries(self) -> Type[Enum]: ...
+    def boundaries(self) -> Type[Boundaries]: return self.Boundaries
 
     def get_state_variable_names(self) -> List[str]:
         return list(self.state_variables.__members__.keys())
@@ -59,15 +66,35 @@ class Convective(Trait):
 class Diffusive(Trait):
     def has_diffusive_terms(self) -> bool: return True
 
-class ConvectivePDETrait(Convective, PDE, Trait): ...
-class DiffusivePDETrait(Diffusive, PDE, Trait): ... 
-class ConvectiveDiffusivePDETrait(Convective, Diffusive, PDE, Trait): ...
+P = TypeVar('P', bound = PDE)
+class FluxFcn(Trait[P]): # type: ignore
+    @jit
+    @staticmethod
+    def compute(physics: P, *args: Array) -> Float64[Array, "n_q, n_s"]:
+        ...
+
+P = TypeVar('P', bound = PDE)
+class NumericalFluxFcn(FluxFcn[P]): # type: ignore
+    """A marker trait for numerical fluxes with an additional class variable"""
+    _VALID_ON_BOUNDARY: Enum
+
+class ConvectivePDETrait(Convective, PDE, Trait): 
+    """Convective + PDE"""
+    ...
+    
+class DiffusivePDETrait(Diffusive, PDE, Trait): 
+    """Diffusive + PDE"""
+    ... 
+
+class ConvectiveDiffusivePDETrait(Convective, Diffusive, PDE, Trait): 
+    """Convective + Diffusive + PDE"""
+    ...
 
 C = TypeVar('C', bound = ConvectivePDETrait)
-class ConvectiveFlux(Diffusive, Trait[C]): # type: ignore
+class ConvectiveFluxFcn(Convective, FluxFcn, Trait[C]): # type: ignore
     """A trait for PDEs with convective analytical flux"""
     @jit
-    def compute_convective_flux(
+    def compute(
         self,
         physics: C, 
         u: Float64[Array, "n_q n_s"],
@@ -76,9 +103,9 @@ class ConvectiveFlux(Diffusive, Trait[C]): # type: ignore
         ...
 
 D = TypeVar('D', bound = DiffusivePDETrait)
-class DiffusiveFlux(Convective, Trait[D]): # type: ignore
+class DiffusiveFluxFcn(Diffusive, FluxFcn, Trait[D]): # type: ignore
     @jit
-    def compute_diffusive_flux(
+    def compute(
         self,
         physics: D, 
         u: Float64[Array, "n_q n_s"],
@@ -88,7 +115,7 @@ class DiffusiveFlux(Convective, Trait[D]): # type: ignore
         ...
 
 C = TypeVar('C', bound = ConvectivePDETrait)
-class ConvectiveNumericalFlux(Convective, Trait[C]): # type: ignore
+class ConvectiveNumericalFlux(Convective, NumericalFlux, Trait[C]): # type: ignore
     @jit
     def compute_convective_numerical_flux(
         self, 
@@ -101,7 +128,7 @@ class ConvectiveNumericalFlux(Convective, Trait[C]): # type: ignore
         ...
 
 D = TypeVar('D', bound = DiffusivePDETrait)
-class DiffusiveNumericalFlux(Diffusive, Trait[D]): # type: ignore
+class DiffusiveNumericalFlux(Diffusive, NumericalFlux, Trait[D]): # type: ignore
     @jit
     def compute_diffusive_numerical_flux(
         self, 
@@ -114,3 +141,13 @@ class DiffusiveNumericalFlux(Diffusive, Trait[D]): # type: ignore
     ) -> Float64[Array, "n_fq n_s"]:
         """Computes the diffusive numerical flux across an element's face"""
         ...
+
+P = TypeVar('P', bound = PDE, contravariant = True)
+N = TypeVar('N', bound = NumericalFluxFcn, contravariant = True)
+class NumericalFluxDispatch(Generic[P, N]):
+    _flux_branch: Mapping[str, N]
+    
+    def compute_numerical_flux(
+        self, 
+        interface: P.boundaries, 
+    )
