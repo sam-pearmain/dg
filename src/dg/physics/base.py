@@ -6,18 +6,13 @@ from jax import jit
 from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
+from dg.physics.variables import StateVariables
 from dg.utils.pytree import PyTree
 from dg.utils.uninit import Uninit
 
 class PDE(ABC, PyTree):
-    """The core PDE trait"""
+    """The core PDE abstract base class"""
     _is_init: bool = False
-
-    class StateVariables(Enum):
-        ...
-
-    class Boundaries(Enum):
-        ...
 
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds:
@@ -32,10 +27,16 @@ class PDE(ABC, PyTree):
         super().__setattr__(name, value)
 
     @property
-    def n_dimensions(self) -> int: ...
+    @abstractmethod
+    def state_variables(self) -> StateVariables: ...
 
     @property
-    def state_variables(self) -> Type[StateVariables]: return self.StateVariables
+    @abstractmethod
+    def interface_mapping(self) -> Mapping[int, str]: ...
+
+    @property
+    @abstractmethod
+    def n_dimensions(self) -> int: ...
 
     @property
     def n_state_variables(self) -> int: return len(self.state_variables)
@@ -55,10 +56,12 @@ class PDE(ABC, PyTree):
     def has_diffusive_terms(self) -> bool: 
         return False
 
-class Convective(Trait):
+class Convective(Protocol):
+    """Effectively just a marker protocol tbh"""
     def has_convective_terms(self) -> bool: return True
 
-class Diffusive(Trait):
+class Diffusive(Protocol):
+    """Effectively just a marker protocol tbh"""
     def has_diffusive_terms(self) -> bool: return True
 
 P = TypeVar('P', bound = PDE)
@@ -73,19 +76,19 @@ class NumericalFluxFunction(FluxFunction[P]): # type: ignore
     """A marker trait for numerical fluxes with an additional class variable"""
     _VALID_ON_BOUNDARY: Enum
 
-class ConvectivePDETrait(Convective, PDE, Trait): 
+class ConvectivePDEProtocol(Convective, PDE): 
     """Convective + PDE"""
     ...
     
-class DiffusivePDETrait(Diffusive, PDE, Trait): 
+class DiffusivePDEProtocol(Diffusive, PDE): 
     """Diffusive + PDE"""
     ... 
 
-class ConvectiveDiffusivePDETrait(Convective, Diffusive, PDE, Trait): 
+class ConvectiveDiffusivePDEProtocol(Convective, Diffusive, PDE): 
     """Convective + Diffusive + PDE"""
     ...
 
-C = TypeVar('C', bound = ConvectivePDETrait)
+C = TypeVar('C', bound = ConvectivePDEProtocol)
 class ConvectiveFluxFunction(Generic[C], Convective, FluxFunction): # type: ignore
     """A trait for PDEs with convective analytical flux"""
     @jit
@@ -97,7 +100,7 @@ class ConvectiveFluxFunction(Generic[C], Convective, FluxFunction): # type: igno
         """Computes the convective flux, F_conv(u)"""
         ...
 
-D = TypeVar('D', bound = DiffusivePDETrait)
+D = TypeVar('D', bound = DiffusivePDEProtocol)
 class DiffusiveFluxFunction(Generic[D], Diffusive, FluxFunction): # type: ignore
     @jit
     def compute(
@@ -109,7 +112,7 @@ class DiffusiveFluxFunction(Generic[D], Diffusive, FluxFunction): # type: ignore
         """Computes the diffusive analytical flux, F_diff(u)"""
         ...
 
-C = TypeVar('C', bound = ConvectivePDETrait)
+C = TypeVar('C', bound = ConvectivePDEProtocol)
 class ConvectiveNumericalFluxFunction(Generic[C], Convective, NumericalFluxFunction): # type: ignore
     @jit
     def compute_convective_numerical_flux(
@@ -122,7 +125,7 @@ class ConvectiveNumericalFluxFunction(Generic[C], Convective, NumericalFluxFunct
         """Computes the convective numerical flux across an element's face"""
         ...
 
-D = TypeVar('D', bound = DiffusivePDETrait)
+D = TypeVar('D', bound = DiffusivePDEProtocol)
 class DiffusiveNumericalFluxFunction(Generic[D], Diffusive, NumericalFluxFunction): # type: ignore
     @jit
     def compute_diffusive_numerical_flux(

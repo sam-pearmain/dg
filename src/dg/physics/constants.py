@@ -5,7 +5,7 @@ PhysicalConstant = NewType("PhysicalConstant", float)
 
 T = TypeVar('T')
 class Constant(Generic[T]):
-    """An enforced immutable constant"""
+    """An enforced immutable constant value"""
     _value: T
     _name: Optional[str] = None
 

@@ -1,8 +1,7 @@
 from typing import TypeVar
 from jaxtyping import Array, Float64
 
-from dg.utils.traits import Trait
-from dg.physics.traits import (
+from dg.physics.base import (
     Convective, Diffusive, ConvectiveFlux, DiffusiveFlux, 
     ConvectiveNumericalFlux, DiffusiveNumericalFlux, 
     ConvectivePDETrait, DiffusivePDETrait
