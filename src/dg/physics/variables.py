@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Optional, Union, List, Dict
 
 from dg.utils.uninit import Uninit
@@ -6,7 +7,7 @@ class StateVariable:
     """A single state variable"""
     _var_str: str            # the variable's name
     _tex_str: Optional[str]  # the variable's tex representation, "\rho" for example
-    _idx: Union[int, Uninit] # the idx of the variable - relevant for 
+    _idx: Union[int, Uninit] # the idx of the variable - relevant for the state vector, just ignore for now
 
     def __init__(self, var_name: str, tex_name: Optional[str] = None) -> None:
         self._var_str = var_name
@@ -14,9 +15,17 @@ class StateVariable:
         self._idx = Uninit()
 
     def __repr__(self) -> str:
-        return self._var_str
+        return f"StateVariable"
     
-    def _tex_repr_(self) -> str:
+    def __str__(self) -> str:
+        return self._var_str
+
+    @property
+    def name(self) -> str:
+        return self._var_str
+
+    @property
+    def tex(self) -> str:
         return self._tex_str if self._tex_str else f"_undefined_"
     
 class StateVector:
@@ -36,7 +45,7 @@ class StateVector:
     def __getitem__(self, idx: int) -> StateVariable:
         return self._vars[idx]
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
         if name in self._name_map:
             return self._name_map[name]
         raise AttributeError(f"{type(self).__name__} object has no attribute '{name}'")
@@ -57,7 +66,7 @@ def tests():
         StateVariable("e", r"E")
     ])
 
-    print(state_vec._vars[3]._tex_str)
+    print(state_vec.rho)
 
 if __name__ == "__main__":
     tests()
