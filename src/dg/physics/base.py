@@ -6,7 +6,7 @@ from jax import jit
 from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
-from dg.physics.variables import StateVariables
+from dg.physics.variables import StateVector
 from dg.utils.pytree import PyTree
 from dg.utils.uninit import Uninit
 
@@ -28,7 +28,7 @@ class PDE(ABC, PyTree):
 
     @property
     @abstractmethod
-    def state_variables(self) -> StateVariables: ...
+    def state_vector(self) -> StateVector: ...
 
     @property
     @abstractmethod
