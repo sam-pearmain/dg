@@ -1,232 +1,148 @@
-from jax import jit
-
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Any, List, Type,  TypeVar, Mapping, Generic, Protocol
+
+from jax import jit
 from jaxtyping import Array, Float64
-from typing import List, Any, Type, TypeVar, Generic
 
 from dg.physics.constants import PhysicalConstant
-from dg.physics.flux import ConvectiveNumericalFlux, DiffusiveNumericalFlux
+from dg.utils.pytree import PyTree
+from dg.utils.uninit import Uninit
 
-class PDE(ABC):
-    """
-    The immutable PDE abstract base class is the skeleton for any weak DG formulation of a  
-    convection-diffusion problem in the form: ∂u/∂t + ∇F_conv(u) + ∇F_diff(u, ∇u) = S
-    """
-    def __init__(self, **kwargs: PhysicalConstant) -> None:
-        super().__init__()
+class PDE(ABC, PyTree):
+    """The core PDE trait"""
+    _is_init: bool = False
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    class StateVariables(Enum):
+        ...
 
-        self._locked = True
+    class Boundaries(Enum):
+        ...
+
+    def __init__(self, **kwds: PhysicalConstant) -> None:
+        for key, value in kwds:
+            self.__setattr__(key, value)
+
+        self._is_init = True
 
     def __setattr__(self, name: str, value: Any) -> None:
-        # to ensure immutability for jax.jit purposes we raise an error if we try to modify an attribute
-        if getattr(self, "_locked", True):
-            raise AttributeError("Cannot modify attributes of Type[PDE] once initialised")
+        if self._is_init:
+            raise AttributeError("once initialised, PDEs remain immutable")
         
         super().__setattr__(name, value)
 
     @property
-    @abstractmethod
-    def n_dimensions(self) -> int:
-        """Returns the number of physical dimensions of the system"""
-        ...
+    def n_dimensions(self) -> int: ...
 
     @property
-    @abstractmethod
-    def state_variables(self) -> Type[Enum]:
-        """The state variables, u"""
-        ...
+    def state_variables(self) -> Type[StateVariables]: return self.StateVariables
 
     @property
-    def n_state_variables(self) -> int:
-        """Returns the number of state vars of the system"""
-        return len(self.state_variables)
-    
+    def n_state_variables(self) -> int: return len(self.state_variables)
+
+    @property
+    def boundaries(self) -> Type[Boundaries]: return self.Boundaries
+
     def get_state_variable_names(self) -> List[str]:
-        """Returns a list of the names of all the state variables"""
         return list(self.state_variables.__members__.keys())
 
     def get_state_variable_index(self, var_name: str) -> int:
-        """Returns the index of a specific state variable"""
         return self.get_state_variable_names().index(var_name)
-    
-    def has_convective_terms(self) -> bool:
-        return False
-    
-    def has_diffusive_terms(self) -> bool:
+
+    def has_convective_terms(self) -> bool: 
         return False
 
-# -- convective terms -- 
+    def has_diffusive_terms(self) -> bool: 
+        return False
 
-class ConvectiveTerms(Generic['ConvectivePDEType'], ABC):
-    """
-    A mixin class for PDEs with convective terms
-    """
-    _convective_numerical_flux: ConvectiveNumericalFlux['ConvectivePDEType']
+class Convective(Trait):
+    def has_convective_terms(self) -> bool: return True
 
-    def __init__(
-            self, 
-            convective_numerical_flux: ConvectiveNumericalFlux['ConvectivePDEType'], 
-            **kwargs: Any
-        ) -> None:
-        super().__init__(**kwargs)
-        self._convective_numerical_flux = convective_numerical_flux
+class Diffusive(Trait):
+    def has_diffusive_terms(self) -> bool: return True
 
+P = TypeVar('P', bound = PDE)
+class FluxFunction(Generic[P], Trait): # type: ignore
     @jit
-    @abstractmethod
-    def compute_convective_flux(
-        self,
-        u: Float64[Array, "n_q n_s"]
-    ) -> Float64[Array, "n_q n_s"]:
-        """Computes the convective flux, F(u)"""
+    @staticmethod
+    def compute(physics: P, *args: Array) -> Float64[Array, "n_q, n_s"]:
         ...
 
-    def compute_convective_numerical_flux(
-        self,
-        physics: 'ConvectivePDEType',
-        u_l: Float64[Array, "n_fq n_s"],
-        u_r: Float64[Array, "n_fq n_s"],
-        normals: Float64[Array, "n_fq n_d"]
-    ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the convective numerical flux at either inteior or boundary faces"""
-        return self._convective_numerical_flux(
-            physics, u_l, u_r, normals
-        )
+P = TypeVar('P', bound = PDE)
+class NumericalFluxFunction(FluxFunction[P]): # type: ignore
+    """A marker trait for numerical fluxes with an additional class variable"""
+    _VALID_ON_BOUNDARY: Enum
 
-    def has_convective_terms(self) -> bool:
-        return True
+class ConvectivePDETrait(Convective, PDE, Trait): 
+    """Convective + PDE"""
+    ...
+    
+class DiffusivePDETrait(Diffusive, PDE, Trait): 
+    """Diffusive + PDE"""
+    ... 
 
-# -- diffusive terms --
+class ConvectiveDiffusivePDETrait(Convective, Diffusive, PDE, Trait): 
+    """Convective + Diffusive + PDE"""
+    ...
 
-class DiffusiveTerms(Generic['DiffusivePDEType'], ABC):
-    """
-    A mixin class for PDEs with diffusive terms
-    """
-    _diffusive_numerical_flux: DiffusiveNumericalFlux['DiffusivePDEType']
-
-    def __init__(
-            self, 
-            diffusive_numerical_flux: DiffusiveNumericalFlux['DiffusivePDEType'], 
-            **kwargs: Any
-        ) -> None:
-        super().__init__(**kwargs)
-        self._diffusive_numerical_flux = diffusive_numerical_flux
-
+C = TypeVar('C', bound = ConvectivePDETrait)
+class ConvectiveFluxFunction(Generic[C], Convective, FluxFunction): # type: ignore
+    """A trait for PDEs with convective analytical flux"""
     @jit
-    @abstractmethod
-    def compute_diffusive_flux(
+    def compute(
         self,
+        physics: C, 
+        u: Float64[Array, "n_q n_s"],
+    ) -> Float64[Array, "n_q n_s"]:
+        """Computes the convective flux, F_conv(u)"""
+        ...
+
+D = TypeVar('D', bound = DiffusivePDETrait)
+class DiffusiveFluxFunction(Generic[D], Diffusive, FluxFunction): # type: ignore
+    @jit
+    def compute(
+        self,
+        physics: D, 
         u: Float64[Array, "n_q n_s"],
         grad_u: Float64[Array, "n_q n_s"],
     ) -> Float64[Array, "n_q n_s"]:
-        """Computes the diffusive flux, F_diff(u)"""
+        """Computes the diffusive analytical flux, F_diff(u)"""
         ...
 
-    def compute_diffusive_numerical_flux(
-        self,
-        physics: 'DiffusivePDEType',
-        u_l: Float64[Array, "n_fq n_s"],
+C = TypeVar('C', bound = ConvectivePDETrait)
+class ConvectiveNumericalFluxFunction(Generic[C], Convective, NumericalFluxFunction): # type: ignore
+    @jit
+    def compute_convective_numerical_flux(
+        self, 
+        physics: C, 
+        u_l: Float64[Array, "n_fq n_s"], 
         u_r: Float64[Array, "n_fq n_s"],
-        grad_u_l: Float64[Array, "n_fq n_s"],
-        grad_u_r: Float64[Array, "n_fq n_s"],
         normals: Float64[Array, "n_fq n_d"],
     ) -> Float64[Array, "n_fq n_s"]:
-        """Computes the diffusive numerical flux at either inteior or boundary faces"""
-        return self._diffusive_numerical_flux(
-            physics, u_l, u_r, grad_u_l, grad_u_r, normals
-        )
+        """Computes the convective numerical flux across an element's face"""
+        ...
 
-    def has_diffusive_terms(self) -> bool:
-        return True
+D = TypeVar('D', bound = DiffusivePDETrait)
+class DiffusiveNumericalFluxFunction(Generic[D], Diffusive, NumericalFluxFunction): # type: ignore
+    @jit
+    def compute_diffusive_numerical_flux(
+        self, 
+        physics: D, 
+        u_l: Float64[Array, "n_fq n_s"], 
+        u_r: Float64[Array, "n_fq n_s"],
+        grad_u_l: Float64[Array, "n_fq n_s"], 
+        grad_u_r: Float64[Array, "n_fq n_s"],
+        normals: Float64[Array, "n_fq n_d"]
+    ) -> Float64[Array, "n_fq n_s"]:
+        """Computes the diffusive numerical flux across an element's face"""
+        ...
 
-# -- typing -- 
-
-class ConvectivePDE(ConvectiveTerms, PDE):
-    """A generic type for convective PDEs"""
-    pass
-
-class DiffusivePDE(DiffusiveTerms, PDE):
-    """A generic type for diffusive PDEs"""
-    pass
-
-class ConvectiveDiffusivePDE(ConvectivePDE, DiffusivePDE):
-    """A generic type for convection-diffusion PDEs"""
-    pass
-
-ConvectivePDEType = TypeVar(
-    "ConvectivePDEType", 
-    bound = ConvectivePDE, 
-    contravariant = True,
-)
-
-DiffusivePDEType = TypeVar(
-    "DiffusivePDEType", 
-    bound = DiffusivePDE,
-    contravariant = True,   
-)
-ConvectiveDiffusivePDEType = TypeVar(
-    "ConvectiveDiffusivePDEType", 
-    bound = ConvectiveDiffusivePDE, 
-    contravariant = True    
-)
-
-# -- tests --
-
-def tests():
-    import jax.numpy as jnp
-    from enum import Enum, auto
-
-    class DummyPhysics(ConvectivePDE):
-        a = PhysicalConstant(1.2)
-
-        @property
-        def state_variables(self) -> Type[Enum]:
-            class DummyStateVars(Enum):
-                u = auto()
-            return DummyStateVars
-        
-        @property
-        def n_dimensions(self) -> int:
-            return 1
-
-        @jit
-        def compute_convective_flux(self, u: Array) -> Array:
-            return self.a * u
+P = TypeVar('P', bound = PDE, contravariant = True)
+N = TypeVar('N', bound = NumericalFluxFunction, contravariant = True)
+class NumericalFluxDispatch(Generic[P, N]):
+    _flux_branch: Mapping[str, N]
     
-    class UpwindFlux(ConvectiveNumericalFlux[DummyPhysics]):
-        def __call__(
-                self, 
-                physics: DummyPhysics, 
-                u_l: Array, 
-                u_r: Array, 
-                normals: Array
-            ) -> Array:
-            return u_l
-
-    class LaxFriedrichsFlux(ConvectiveNumericalFlux[DummyPhysics]):
-        def __call__(
-                self, 
-                physics: DummyPhysics, 
-                u_l: Array, 
-                u_r: Array, 
-                normals: Array
-            ) -> Array:
-            return 0.5 * (
-                physics.compute_convective_flux(u_l) +
-                physics.compute_convective_flux(u_r) -
-                jnp.abs(physics.a * normals) * 2
-            )
-
-    erm = DummyPhysics(
-        UpwindFlux(),
-    )
-
-    erm2 = DummyPhysics(
-        LaxFriedrichsFlux(),
-    )
-
-if __name__ == "__main__":
-    tests()
+    def compute_numerical_flux(
+        self, 
+    ) -> None:
+        pass
