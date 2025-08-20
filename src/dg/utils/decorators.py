@@ -1,3 +1,5 @@
+import sys
+
 from typing import Type, Callable, TypeVar
 
 T = TypeVar('T', bound = object)
@@ -6,13 +8,22 @@ def display(debug: bool = False) -> Callable[[Type[T]], Type[T]]:
     def decorator(cls: Type[T]) -> Type[T]:
         def __repr_standard__(self: T) -> str:
             """Minimal __repr__ method"""
-            attrs = ", ".join(f"{key} = {value!r}" for key, value in self.__dict__.items())
-            return f"<{cls.__name__}: {{{attrs}}}>"
+            attrs = ", ".join(f"{key}: {type(value).__name__} = {value!r}" for key, value in self.__dict__.items())
+            return f"<{cls.__name__}: {{ {attrs} }}>"
 
         def __repr_debug__(self: T) -> str:
-            """Detailed __repr__ method for debug purposes"""
-            attrs = ", ".join(f"{key}: {type(value).__name__} = {value!r}" for key, value in self.__dict__.items())
-            return f"<{cls.__name__}: {{{attrs}}}>"
+            """Detailed __repr__ method for debug purposes"""            
+            attrs = {key: value for key, value in cls.__dict__.items()
+                     if not key.startswith('__') and not callable(value)}
+            attrs.update(self.__dict__)
+            
+            attrs_str = "\n".join(f"\t{key}: {type(value).__name__} = {value!r}"
+                                  for key, value in attrs.items())
+            
+            return (f"{cls.__name__}: {{\n"
+                    f"\tMemory: {sys.getsizeof(self)} bytes\n"
+                    f"{attrs_str}\n"
+                    f"}}")
 
 
         if debug:
@@ -25,14 +36,19 @@ def display(debug: bool = False) -> Callable[[Type[T]], Type[T]]:
     return decorator
 
 def tests():
-    @display()
+    @display(debug = True)
     class Test():
         def __init__(self) -> None:
             self.one = 1.0
             self.two = 2
             self.str = "str"
 
-    test = Test()
+    @display(debug = True)
+    class Testing():
+        def __init__(self) -> None:
+            self.test = Test()
+
+    test = Testing()
 
     print(test)
 
