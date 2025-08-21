@@ -8,7 +8,6 @@ from jaxtyping import Array, Float64
 from dg.physics.constants import PhysicalConstant
 from dg.physics.variables import StateVector
 from dg.utils.pytree import PyTree
-from dg.utils.uninit import Uninit
 
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
