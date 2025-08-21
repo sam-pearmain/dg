@@ -5,7 +5,7 @@ PhysicalConstant = NewType("PhysicalConstant", float)
 
 T = TypeVar('T')
 class Constant(Generic[T]):
-    """An enforced immutable constant value"""
+    """An enforced immutable constant"""
     _value: T
     _name: Optional[str] = None
 
@@ -15,7 +15,7 @@ class Constant(Generic[T]):
         self._name = name
     
     def __repr__(self) -> str:
-        return f"{self._name}: {self._value}" if self._name else f"_undefined_name_: {self._value}"
+        return f"{self._name}: {self._value}" if self._name else f"_undefined_constant_: {self._value}"
 
     def __get__(self) -> T:
         return self._value
