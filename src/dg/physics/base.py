@@ -7,23 +7,14 @@ from jaxtyping import Array, Float64
 from dg.physics.constants import PhysicalConstant
 from dg.physics.variables import StateVector
 from dg.utils.pytree import PyTree
-from dg.utils.decorators import compose
+from dg.utils.decorators import compose, immutable, debug
 
+@immutable
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
-    _is_init: bool = False
-
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds:
             self.__setattr__(key, value)
-
-        self._is_init = True
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if self._is_init:
-            raise AttributeError("once initialised, PDEs remain immutable")
-        
-        super().__setattr__(name, value)
 
     @property
     @abstractmethod
