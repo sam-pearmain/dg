@@ -15,7 +15,7 @@ def debug(cls: Type[T]) -> Type[T]:
     def __repr__(self: T) -> str:
         """Minimal __repr__ method for simple debug"""
         attrs = ", ".join(f"{key}: {type(value).__name__} = {value!r}" for key, value in self.__dict__.items())
-        return f"{cls.__name__}: {{ {attrs} }}"
+        return f"{cls.__name__} {{ {attrs} }}"
 
     setattr(cls, "__repr__", __repr__)
     return cls
@@ -27,16 +27,16 @@ def immutable(cls: Type[T]) -> Type[T]:
     @wraps(cls.__init__)
     def __new_init__(self: T, *args, **kwds) -> None:
         """Our new __init__"""
-        object.__setattr__(self, "_is_init", False)
         __init__(self, *args, **kwds)
         object.__setattr__(self, "_is_init", True)
 
     def __new_setattr__(self: T, name: str, value: Any) -> None:
         """Our new __setattr__"""
-        if not getattr(self, "_is_init", False):
+        if getattr(self, "_is_init", False):
             # if we are initialised
             raise AttributeError(f"immutable object {cls.__name__}")
-        object.__setattr__(self, name, value)
+        else:
+            object.__setattr__(self, name, value)
     
     cls.__init__ = __new_init__
     cls.__setattr__ = __new_setattr__
