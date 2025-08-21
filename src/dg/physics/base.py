@@ -43,7 +43,7 @@ class Diffusive(Protocol):
     def has_diffusive_terms(self) -> bool: return True
 
 P = TypeVar('P', bound = PDE)
-class FluxFunction(Generic[P], Trait): # type: ignore
+class FluxFunction(Generic[P], Protocol): # type: ignore
     @jit
     @staticmethod
     def compute(physics: P, *args: Array) -> Float64[Array, "n_q, n_s"]:
