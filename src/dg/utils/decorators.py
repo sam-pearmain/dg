@@ -3,8 +3,9 @@ from functools import wraps
 
 T = TypeVar('T', bound = object)
 def compose(*decorators: Callable[[Type[T]], Type[T]]):
+    """Composes decorators into a single line"""
     def wrapper(cls: Type[T]) -> Type[T]:
-        for decorator in decorators:
+        for decorator in reversed(decorators):
             cls = decorator(cls)
         return cls
     return wrapper

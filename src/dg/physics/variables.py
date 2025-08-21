@@ -52,6 +52,10 @@ class StateVector:
 
     def __len__(self):
         return len(self._vars)
+    
+    @property
+    def n_state_variables(self) -> int: 
+        return len(self)
 
     @staticmethod
     def _init_var_indexes(vars: List[StateVariable]) -> None:

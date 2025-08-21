@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, List, Type,  TypeVar, Mapping, Generic, Protocol
-
 from jax import jit
 from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.variables import StateVector
 from dg.utils.pytree import PyTree
+from dg.utils.decorators import compose
 
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
@@ -36,18 +36,6 @@ class PDE(ABC, PyTree):
     @property
     @abstractmethod
     def n_dimensions(self) -> int: ...
-
-    @property
-    def n_state_variables(self) -> int: return len(self.state_variables)
-
-    @property
-    def boundaries(self) -> Type[Boundaries]: return self.Boundaries
-
-    def get_state_variable_names(self) -> List[str]:
-        return list(self.state_variables.__members__.keys())
-
-    def get_state_variable_index(self, var_name: str) -> int:
-        return self.get_state_variable_names().index(var_name)
 
     def has_convective_terms(self) -> bool: 
         return False
