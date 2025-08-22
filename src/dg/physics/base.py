@@ -50,7 +50,7 @@ P = TypeVar('P', bound = PDE)
 class FluxFunction(Generic[P], Protocol): # type: ignore
     @jit
     @abstractmethod
-    def compute(self, physics: P, *args: Array) -> Float64[Array, "n_q, n_s"]:
+    def compute(self, physics: P, *args: Array) -> Float64[Array, "n_q n_s"]:
         ...
 
 P = TypeVar('P', bound = PDE)
@@ -181,7 +181,14 @@ class ConvectiveDiffusiveFluxMapping(Convective, Diffusive, FluxMapping[E]):
         super().__init__()
 
 def tests():
-    pass
+    class Point:
+        __slots__ = ['x', 'y']
+
+        def __init__(self, x, y) -> None:
+            self.x = x; self.y = y
+
+    p1 = Point(1, 2)
+    p1.__dict__
 
 if __name__ == "__main__":
     tests()

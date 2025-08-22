@@ -1,9 +1,9 @@
 from typing import Any, Optional, Union, List, Mapping
 
 from dg.utils.uninit import Uninit
-from dg.utils.decorators import compose, immutable, debug
+from dg.utils.decorators import compose, immutable, autorepr
 
-@debug
+@autorepr
 class StateVariable:
     """A single state variable"""
     _var_str: str            # the variable's name
@@ -27,7 +27,7 @@ class StateVariable:
     def tex(self) -> str:
         return self._tex_str if self._tex_str else f"_undefined_"
     
-@compose(immutable, debug)
+@compose(immutable, autorepr)
 class StateVector:
     """A container for the state variables"""
     _vars: List[StateVariable]
