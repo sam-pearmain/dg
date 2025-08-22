@@ -25,6 +25,7 @@ T = TypeVar('T', bound = object)
 def immutable(cls: Type[T]) -> Type[T]:
     """Makes a class immutable but not really but kinda"""
     __init__ = cls.__init__
+    
     @wraps(cls.__init__)
     def __new_init__(self: T, *args, **kwds) -> None:
         """Our new __init__"""
@@ -39,8 +40,16 @@ def immutable(cls: Type[T]) -> Type[T]:
         else:
             object.__setattr__(self, name, value)
     
-    cls.__init__ = __new_init__
-    cls.__setattr__ = __new_setattr__
+    def is_mutable(self: T) -> bool: 
+        return False
+    
+    def is_immutable(self: T) -> bool:
+        return True
+
+    setattr(cls, "__init__", __new_init__)
+    setattr(cls, "__setattr__", __new_setattr__)
+    setattr(cls, "is_mutable", is_mutable)
+    setattr(cls, "is_immutable", is_immutable)
     return cls
 
 def tests():

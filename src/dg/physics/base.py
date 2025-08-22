@@ -6,6 +6,7 @@ from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.variables import StateVector
+from dg.physics.interfaces import InterfaceCollection
 from dg.utils.pytree import PyTree
 from dg.utils.decorators import compose, immutable, debug
 
@@ -22,7 +23,7 @@ class PDE(ABC, PyTree):
 
     @property
     @abstractmethod
-    def interface_mapping(self) -> Mapping[int, str]: ...
+    def interface_mapping(self) -> InterfaceCollection: ...
 
     @property
     @abstractmethod
