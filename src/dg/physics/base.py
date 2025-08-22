@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, TypeVar, Mapping, Generic, Protocol
+from typing import Self, TypeVar, Mapping, Generic, Protocol
 from jax import jit
 from jaxtyping import Array, Float64
 
@@ -14,7 +14,7 @@ from dg.utils.decorators import compose, immutable, debug
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
     def __init__(self, **kwds: PhysicalConstant) -> None:
-        for key, value in kwds:
+        for key, value in kwds.items():
             self.__setattr__(key, value)
     
     @property
@@ -31,7 +31,7 @@ class PDE(ABC, PyTree):
 
     @property
     @abstractmethod
-    def flux_mapping(self) -> 'FluxMapping': ...
+    def flux_mapping(self) -> 'FluxMapping[Self]': ...
 
     def has_convective_terms(self) -> bool: 
         return False
@@ -50,8 +50,8 @@ class Diffusive(Protocol):
 P = TypeVar('P', bound = PDE)
 class FluxFunction(Generic[P], Protocol): # type: ignore
     @jit
-    @staticmethod
-    def compute(physics: P, *args: Array) -> Float64[Array, "n_q, n_s"]:
+    @abstractmethod
+    def compute(self, physics: P, *args: Array) -> Float64[Array, "n_q, n_s"]:
         ...
 
 P = TypeVar('P', bound = PDE)
