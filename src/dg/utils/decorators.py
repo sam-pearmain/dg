@@ -5,13 +5,13 @@ T = TypeVar('T', bound = object)
 def compose(*decorators: Callable[[Type[T]], Type[T]]):
     """Composes decorators into a single line"""
     def wrapper(cls: Type[T]) -> Type[T]:
-        for decorator in reversed(decorators):
+        for decorator in decorators:
             cls = decorator(cls)
         return cls
     return wrapper
 
 T = TypeVar('T', bound = object)
-def debug(cls: Type[T]) -> Type[T]:
+def autorepr(cls: Type[T]) -> Type[T]:
     """Autogenerates a class' __repr__ method, similar to Rust's [derive(Debug)]"""
     def __repr__(self: T) -> str:
         """Minimal __repr__ method for simple debug"""
@@ -19,6 +19,14 @@ def debug(cls: Type[T]) -> Type[T]:
         return f"{cls.__name__} {{ {attrs} }}"
 
     setattr(cls, "__repr__", __repr__)
+    return cls
+
+T = TypeVar('T', bound = object)
+def autostr(cls: Type[T]) -> Type[T]:
+    def __str__(self: T) -> str:
+        return f"{cls.__name__}"
+    
+    setattr(cls, "__str__", __str__)
     return cls
 
 T = TypeVar('T', bound = object)
@@ -45,7 +53,7 @@ def immutable(cls: Type[T]) -> Type[T]:
     return cls
 
 def tests():
-    @compose(immutable, debug)
+    @compose(immutable, autorepr)
     class Point():
         def __init__(self, x, y) -> None:
             self.x = x

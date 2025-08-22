@@ -7,10 +7,9 @@ from dg.physics.constants import PhysicalConstant
 from dg.physics.variables import StateVector
 from dg.physics.interfaces import InterfaceCollection, Interface
 from dg.utils.pytree import PyTree
-from dg.utils.decorators import compose, immutable, debug
+from dg.utils.decorators import compose, immutable, autorepr
 
-
-@compose(immutable, debug)
+@compose(immutable, autorepr)
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
     def __init__(self, **kwds: PhysicalConstant) -> None:
@@ -143,6 +142,7 @@ class ConvectiveFluxMapping(Convective, FluxMapping[C]):
         ) -> None:
         self.convective_analytical_flux_function = analytical_flux
         self.convective_numerical_flux_mapping = numerical_flux_map
+        super().__init__()
 
 D = TypeVar('D', bound = DiffusivePDEProtocol)
 @immutable
@@ -157,6 +157,7 @@ class DiffusiveFluxMapping(Diffusive, FluxMapping[D]):
         ) -> None:
         self.diffusive_analytical_flux_function = analytical_flux
         self.diffusive_numerical_flux_mapping = numerical_flux_map
+        super().__init__()
 
 E = TypeVar('E', bound = ConvectiveDiffusivePDEProtocol)
 @immutable
@@ -178,3 +179,9 @@ class ConvectiveDiffusiveFluxMapping(Convective, Diffusive, FluxMapping[E]):
         self.diffusive_analytical_flux_function  = diffusive_analytical_flux
         self.diffusive_numerical_flux_mapping    = diffusive_numerical_flux_map
         super().__init__()
+
+def tests():
+    pass
+
+if __name__ == "__main__":
+    tests()
