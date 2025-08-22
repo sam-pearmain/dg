@@ -34,7 +34,7 @@ def immutable(cls: Type[T]) -> Type[T]:
 
     def __new_setattr__(self: T, name: str, value: Any) -> None:
         """Our new __setattr__"""
-        if getattr(self, "_is_init", False):
+        if self.__dict__.get("_is_init", False):
             # if we are initialised
             raise AttributeError(f"immutable object {cls.__name__}")
         else:

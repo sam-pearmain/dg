@@ -10,7 +10,6 @@ from dg.utils.pytree import PyTree
 from dg.utils.decorators import compose, immutable, debug
 
 
-F = TypeVar('F', bound = )
 @compose(immutable, debug)
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
@@ -32,7 +31,7 @@ class PDE(ABC, PyTree):
 
     @property
     @abstractmethod
-    def flux_mapping(self) -> FluxMapping: ...
+    def flux_mapping(self) -> 'FluxMapping': ...
 
     def has_convective_terms(self) -> bool: 
         return False
@@ -68,7 +67,7 @@ class DiffusivePDEProtocol(Diffusive, PDE):
     """Diffusive + PDE"""
     ... 
 
-class ConvectiveDiffusivePDEProtocol(Convective, Diffusive, PDE): 
+class ConvectiveDiffusivePDEProtocol(ConvectivePDEProtocol, DiffusivePDEProtocol): 
     """Convective + Diffusive + PDE"""
     ...
 
@@ -129,26 +128,53 @@ class DiffusiveNumericalFluxFunction(Generic[D], Diffusive, NumericalFluxFunctio
         ...
 
 P = TypeVar('P', bound = PDE)
-class FluxMapping(Generic[P]):
-    """Marker trait"""
-    pass
+class FluxMapping(Generic[P]): ...
 
 C = TypeVar('C', bound = ConvectivePDEProtocol)
 @immutable
-class ConvectiveFluxMapping(FluxMapping[C]): 
-    analytical_flux_function: ConvectiveFluxFunction
+class ConvectiveFluxMapping(Convective, FluxMapping[C]): 
+    convective_analytical_flux_function: ConvectiveFluxFunction
     convective_numerical_flux_mapping: Mapping[Interface, ConvectiveNumericalFluxFunction[C]]
 
     def __init__(
             self, 
             analytical_flux: ConvectiveFluxFunction,
-            numerical_flux_map: 'NumericalFluxMap',
+            numerical_flux_map: Mapping[Interface, ConvectiveNumericalFluxFunction],
         ) -> None:
-        super().__init__()
-    
+        self.convective_analytical_flux_function = analytical_flux
+        self.convective_numerical_flux_mapping = numerical_flux_map
 
-
-N = TypeVar('N', bound = NumericalFluxFunction)
+D = TypeVar('D', bound = DiffusivePDEProtocol)
 @immutable
-class NumericalFluxMap(Generic[N]):
-    _function_map: Dict[Interface, N]
+class DiffusiveFluxMapping(Diffusive, FluxMapping[D]):
+    diffusive_analytical_flux_function: DiffusiveFluxFunction
+    diffusive_numerical_flux_mapping: Mapping[Interface, DiffusiveNumericalFluxFunction[D]]
+
+    def __init__(
+            self, 
+            analytical_flux: DiffusiveFluxFunction, 
+            numerical_flux_map: Mapping[Interface, DiffusiveNumericalFluxFunction[D]]
+        ) -> None:
+        self.diffusive_analytical_flux_function = analytical_flux
+        self.diffusive_numerical_flux_mapping = numerical_flux_map
+
+E = TypeVar('E', bound = ConvectiveDiffusivePDEProtocol)
+@immutable
+class ConvectiveDiffusiveFluxMapping(Convective, Diffusive, FluxMapping[E]):
+    convective_analytical_flux_function: ConvectiveFluxFunction
+    convective_numerical_flux_mapping:   Mapping[Interface, ConvectiveNumericalFluxFunction[E]]
+    diffusive_analytical_flux_function:  DiffusiveFluxFunction
+    diffusive_numerical_flux_mapping:    Mapping[Interface, DiffusiveNumericalFluxFunction]
+
+    def __init__(
+            self,
+            convective_analytical_flux:    ConvectiveFluxFunction,
+            convective_numerical_flux_map: Mapping[Interface, ConvectiveNumericalFluxFunction],
+            diffusive_analytical_flux:     DiffusiveFluxFunction, 
+            diffusive_numerical_flux_map:  Mapping[Interface, DiffusiveNumericalFluxFunction],
+        ) -> None:
+        self.convective_analytical_flux_function = convective_analytical_flux
+        self.convective_numerical_flux_mapping   = convective_numerical_flux_map
+        self.diffusive_analytical_flux_function  = diffusive_analytical_flux
+        self.diffusive_numerical_flux_mapping    = diffusive_numerical_flux_map
+        super().__init__()

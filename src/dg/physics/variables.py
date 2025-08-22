@@ -1,18 +1,17 @@
-from dataclasses import dataclass
-from typing import Any, Optional, Union, List, Dict
+from typing import Any, Optional, Union, List, Mapping
 
 from dg.utils.uninit import Uninit
+from dg.utils.decorators import compose, immutable, debug
 
+@debug
 class StateVariable:
     """A single state variable"""
     _var_str: str            # the variable's name
     _tex_str: Optional[str]  # the variable's tex representation, "\rho" for example
-    _idx: Union[int, Uninit] # the idx of the variable - relevant for the state vector, just ignore for now
 
     def __init__(self, var_name: str, tex_name: Optional[str] = None) -> None:
         self._var_str = var_name
         self._tex_str = tex_name
-        self._idx = Uninit()
 
     def __repr__(self) -> str:
         return f"StateVariable"
@@ -28,14 +27,13 @@ class StateVariable:
     def tex(self) -> str:
         return self._tex_str if self._tex_str else f"_undefined_"
     
+@compose(immutable, debug)
 class StateVector:
     """A container for the state variables"""
     _vars: List[StateVariable]
-    _name_map: Dict[str, StateVariable]
-    _is_zero_indexed: bool = True
+    _name_map: Mapping[str, StateVariable]
 
     def __init__(self, vars: List[StateVariable]) -> None:
-        self._init_var_indexes(vars)
         self._vars = vars
         self._name_map = {var._var_str: var for var in vars}
 
@@ -56,11 +54,6 @@ class StateVector:
     @property
     def n_state_variables(self) -> int: 
         return len(self)
-
-    @staticmethod
-    def _init_var_indexes(vars: List[StateVariable]) -> None:
-        for i, variable in enumerate(vars):
-            variable._idx = i
 
 def tests():
     state_vec = StateVector([
