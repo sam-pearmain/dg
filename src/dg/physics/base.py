@@ -1,21 +1,26 @@
 from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, List, Type,  TypeVar, Mapping, Generic, Protocol
+from typing import Dict, TypeVar, Mapping, Generic, Protocol
 from jax import jit
 from jaxtyping import Array, Float64
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.variables import StateVector
-from dg.physics.interfaces import InterfaceCollection
+from dg.physics.interfaces import InterfaceCollection, Interface
 from dg.utils.pytree import PyTree
 from dg.utils.decorators import compose, immutable, debug
 
-@immutable
+
+F = TypeVar('F', bound = )
+@compose(immutable, debug)
 class PDE(ABC, PyTree):
     """The core PDE abstract base class"""
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds:
             self.__setattr__(key, value)
+    
+    @property
+    @abstractmethod
+    def n_dimensions(self) -> int: ...
 
     @property
     @abstractmethod
@@ -27,7 +32,7 @@ class PDE(ABC, PyTree):
 
     @property
     @abstractmethod
-    def n_dimensions(self) -> int: ...
+    def flux_mapping(self) -> FluxMapping: ...
 
     def has_convective_terms(self) -> bool: 
         return False
@@ -53,7 +58,7 @@ class FluxFunction(Generic[P], Protocol): # type: ignore
 P = TypeVar('P', bound = PDE)
 class NumericalFluxFunction(FluxFunction[P]): # type: ignore
     """A marker trait for numerical fluxes with an additional class variable"""
-    _VALID_ON_BOUNDARY: Enum
+    _VALID_ON_INTERFACE: Interface
 
 class ConvectivePDEProtocol(Convective, PDE): 
     """Convective + PDE"""
@@ -71,6 +76,7 @@ C = TypeVar('C', bound = ConvectivePDEProtocol)
 class ConvectiveFluxFunction(Generic[C], Convective, FluxFunction): # type: ignore
     """A trait for PDEs with convective analytical flux"""
     @jit
+    @abstractmethod
     def compute(
         self,
         physics: C, 
@@ -82,6 +88,7 @@ class ConvectiveFluxFunction(Generic[C], Convective, FluxFunction): # type: igno
 D = TypeVar('D', bound = DiffusivePDEProtocol)
 class DiffusiveFluxFunction(Generic[D], Diffusive, FluxFunction): # type: ignore
     @jit
+    @abstractmethod
     def compute(
         self,
         physics: D, 
@@ -94,7 +101,8 @@ class DiffusiveFluxFunction(Generic[D], Diffusive, FluxFunction): # type: ignore
 C = TypeVar('C', bound = ConvectivePDEProtocol)
 class ConvectiveNumericalFluxFunction(Generic[C], Convective, NumericalFluxFunction): # type: ignore
     @jit
-    def compute_convective_numerical_flux(
+    @abstractmethod
+    def compute(
         self, 
         physics: C, 
         u_l: Float64[Array, "n_fq n_s"], 
@@ -107,7 +115,8 @@ class ConvectiveNumericalFluxFunction(Generic[C], Convective, NumericalFluxFunct
 D = TypeVar('D', bound = DiffusivePDEProtocol)
 class DiffusiveNumericalFluxFunction(Generic[D], Diffusive, NumericalFluxFunction): # type: ignore
     @jit
-    def compute_diffusive_numerical_flux(
+    @abstractmethod
+    def compute(
         self, 
         physics: D, 
         u_l: Float64[Array, "n_fq n_s"], 
@@ -119,12 +128,27 @@ class DiffusiveNumericalFluxFunction(Generic[D], Diffusive, NumericalFluxFunctio
         """Computes the diffusive numerical flux across an element's face"""
         ...
 
-P = TypeVar('P', bound = PDE, contravariant = True)
-N = TypeVar('N', bound = NumericalFluxFunction, contravariant = True)
-class NumericalFluxDispatch(Generic[P, N]):
-    _flux_branch: Mapping[str, N]
+P = TypeVar('P', bound = PDE)
+class FluxMapping(Generic[P]):
+    """Marker trait"""
+    pass
+
+C = TypeVar('C', bound = ConvectivePDEProtocol)
+@immutable
+class ConvectiveFluxMapping(FluxMapping[C]): 
+    analytical_flux_function: ConvectiveFluxFunction
+    convective_numerical_flux_mapping: Mapping[Interface, ConvectiveNumericalFluxFunction[C]]
+
+    def __init__(
+            self, 
+            analytical_flux: ConvectiveFluxFunction,
+            numerical_flux_map: 'NumericalFluxMap',
+        ) -> None:
+        super().__init__()
     
-    def compute_numerical_flux(
-        self, 
-    ) -> None:
-        pass
+
+
+N = TypeVar('N', bound = NumericalFluxFunction)
+@immutable
+class NumericalFluxMap(Generic[N]):
+    _function_map: Dict[Interface, N]
