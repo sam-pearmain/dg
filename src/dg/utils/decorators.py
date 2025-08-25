@@ -1,5 +1,3 @@
-import inspect
-
 from typing import Any, Type, TypeVar, Callable
 from functools import wraps
 
@@ -64,6 +62,14 @@ def tests():
     p1 = Point(1.0, 2.0)
 
     print(p1)
+
+    def do_this(self) -> bool:
+        return True
+
+    point = Point
+    point.do_this = do_this
+
+    print(point(1, 2).do_this())
 
 if __name__ == "__main__":
     tests()
