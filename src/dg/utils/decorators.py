@@ -32,25 +32,6 @@ def autostr(cls: Type[T]) -> Type[T]:
     return cls
 
 T = TypeVar('T', bound = object)
-def autoslots(cls: Type[T]) -> Type[T]:
-    if "__slots__" in cls.__dict__:
-        # __slots__ already created and we can ignore
-        return cls
-    
-    try: 
-        init_sig = inspect.signature(cls.__init__)
-    except:
-        return cls
-    
-    params = [
-        param.name for param in init_sig.parameters.values()
-        if param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and param.name != "self"
-    ]
-
-    setattr(cls, "__slots__", tuple(params))
-    return cls
-
-T = TypeVar('T', bound = object)
 def immutable(cls: Type[T]) -> Type[T]:
     """Makes a class immutable but not really but kinda"""
     __init__ = cls.__init__
