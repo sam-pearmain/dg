@@ -1,15 +1,33 @@
-from typing import List
+from typing import Mapping, Iterable
 
+from dg.utils.decorators import autorepr
+
+@autorepr
 class Interface:
     name: str
-    marker: int # this relates to the meshes interface tags
 
-    def __init__(self, name: str, marker: int) -> None:
+    def __init__(self, name: str) -> None:
         self.name = name
-        self.marker = marker
 
-class InterfaceCollection:
-    _interfaces: List[Interface]
+@autorepr
+class Interfaces:
+    _interfaces: Mapping[int, Interface]
 
-    def __init__(self, interfaces: List[Interface]) -> None:
+    def __init__(self, interfaces: Mapping[int, Interface]) -> None:
         self._interfaces = interfaces
+
+    def __iter__(self) -> Iterable:
+        return self._interfaces.values()
+
+def tests():
+    euler_interfaces = Interfaces({
+        0: Interface("interior"), 
+        1: Interface("pinlet"), 
+        2: Interface("poutlet"), 
+        3: Interface("wall")
+    })
+
+    print(euler_interfaces)
+
+if __name__ == "__main__":
+    tests()
