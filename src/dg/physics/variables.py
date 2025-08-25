@@ -1,9 +1,9 @@
 from typing import Any, Optional, Union, List, Mapping
 
 from dg.utils.uninit import Uninit
-from dg.utils.decorators import compose, immutable, autorepr
+from dg.utils.decorators import compose, immutable, autorepr, autostr
 
-@autorepr
+@compose(autorepr, autostr)
 class StateVariable:
     """A single state variable"""
     _var_str: str            # the variable's name
@@ -12,9 +12,6 @@ class StateVariable:
     def __init__(self, var_name: str, tex_name: Optional[str] = None) -> None:
         self._var_str = var_name
         self._tex_str = tex_name
-
-    def __repr__(self) -> str:
-        return f"StateVariable"
     
     def __str__(self) -> str:
         return self._var_str
@@ -27,7 +24,7 @@ class StateVariable:
     def tex(self) -> str:
         return self._tex_str if self._tex_str else f"_undefined_"
     
-@compose(immutable, autorepr)
+@compose(immutable, autorepr, autostr)
 class StateVector:
     """A container for the state variables"""
     _vars: List[StateVariable]
@@ -60,7 +57,7 @@ def tests():
         StateVariable("rho", r"\rho"),
         StateVariable("rho_u", r"\rho u"), 
         StateVariable("rho_v", r"\rho v"), 
-        StateVariable("e", r"E")
+        StateVariable("E", r"E")
     ])
 
     print(state_vec.rho)
