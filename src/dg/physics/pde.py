@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Any
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.interfaces import InterfaceType, Interfaces
@@ -32,7 +32,11 @@ class PDE(ABC, Generic[P]):
         return self._flux.interfaces()
 
 def tests():
-    from dg.physics.flux import Flux
+    from jax import jit
+    from dg.physics.flux import (
+        Flux, ConvectiveAnalyticalFlux, 
+        ConvectiveNumericalFlux, ConvectiveNumericalFluxDispatch
+    )
 
     class ScalarAdvectionFlux(Flux["ScalarAdvection"]):
         def has_convective_terms(self) -> bool:
@@ -41,8 +45,16 @@ def tests():
         def has_diffusive_terms(self) -> bool:
             return False
     
+    class AnalyticalFlux(ConvectiveAnalyticalFlux["ScalarAdvection"]):
+        @jit
+        def __call__(self, *args: Any, **kwds: Any) -> Any:
+            return super().__call__(*args, **kwds)
+        
+
     class ScalarAdvection(PDE):
-        _flux: Flux["ScalarAdvection"] = ScalarAdvectionFlux()
+        _flux: Flux["ScalarAdvection"] = ScalarAdvectionFlux(
+
+        )
         a: PhysicalConstant = PhysicalConstant(1.0)
 
         def __init__(self, **kwds: PhysicalConstant) -> None:
@@ -56,15 +68,10 @@ def tests():
         
         @property
         def flux(self) -> Flux["ScalarAdvection"]:
-            return ScalarAdvectionFlux(
-                None, 
-                None, 
-                None, 
-                None, 
-            )
+            return self._flux
         
-    pde = ScalarAdvection()
-    print(pde.a)
+    equations = ScalarAdvection()
+    print(equations.a)
 
 if __name__ == "__main__":
     tests()

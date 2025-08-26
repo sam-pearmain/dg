@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
-from typing import Generic, Mapping, Optional, Any, Type, TypeVar, TYPE_CHECKING
+import jax
 
-from jax import jit
+from abc import ABC, abstractmethod
+from typing import Generic, Mapping, Optional, Any, Protocol, TypeVar, TYPE_CHECKING
+
 from jaxtyping import Array, Float64
 
 from dg.physics.interfaces import InterfaceType, Interfaces
@@ -11,38 +12,38 @@ from dg.utils.todo import todo
 if TYPE_CHECKING:
     from dg.physics.pde import PDE
 
-class _Convective:
+class _Convective(Protocol):
     """A marker trait for convective terms"""
     def is_convective(self) -> bool: return True
 
-class _Diffusive:
+class _Diffusive(Protocol):
     """A marker trait for diffusive terms"""
     def is_diffusive(self) -> bool: return True
 
-T = TypeVar('T')
-class _Function(ABC, Generic[T]): # type: ignore
-    """A generic function requiring a jit-compiled __call__ method"""
-    @jit
+class _Function(ABC):
+    def __call__(self, *args: Any, **kwds: Any) -> Any: 
+        return self._call_impl(args, kwds)
+
     @abstractmethod
-    def __call__(self, *args: Any, **kwds: Any) -> Any: ...
+    def _call_impl(self, *args: Any, **kwds: Any) -> Any: ...
+
+class Test(_Function):
+    @jax.jit
+    def _call_impl(self, *args: Any, **kwds: Any) -> Any:
+        
 
 P = TypeVar('P', bound = "PDE")
-class _NumericalFluxFunction(_Function[P]):
+class _NumericalFluxFunction(_Function, Generic[P]):
     @property
-    @abstractmethod
     def _DEFINED_ON_INTERFACE(self) -> InterfaceType[P]: ...
-
-    @jit
-    @abstractmethod
+    
     def __call__(self, physics: P, *args: Any, **kwds: Any) -> Any: ...
 
     def defined_on(self) -> InterfaceType[P]: return self._DEFINED_ON_INTERFACE 
 
 P = TypeVar('P', bound = "PDE")
-class ConvectiveAnalyticalFlux(_Function[P], _Convective):
-    @jit
-    @abstractmethod
-    def __call__(
+class ConvectiveAnalyticalFlux(_Convective, Protocol, Generic[P]): # type: ignore 
+    def compute(
             self, 
             physics: P, 
             u: Float64[Array, "n_q n_s"],
@@ -50,9 +51,8 @@ class ConvectiveAnalyticalFlux(_Function[P], _Convective):
         ...
     
 P = TypeVar('P', bound = "PDE")
-class DiffusiveAnalyticalFlux(_Function[P], _Diffusive):
+class DiffusiveAnalyticalFlux(_Diffusive, Generic[P]):
     @jit
-    @abstractmethod
     def __call__(
             self, 
             physics: P, 
@@ -79,7 +79,7 @@ P = TypeVar('P', bound = "PDE")
 class DiffusiveNumericalFlux(_NumericalFluxFunction[P]):
     @jit
     @abstractmethod
-    def __call__(
+    def compute(
             self, 
             physics: P, 
             u_l: Float64[Array, "n_q n_s"],
@@ -160,10 +160,8 @@ class Flux(ABC, Generic[P]):
     def interfaces(self) -> Interfaces[P]:
         todo("build this collection when we init the class")
 
-    @abstractmethod
     def has_convective_terms(self) -> bool: ...
     
-    @abstractmethod
     def has_diffusive_terms(self) -> bool: ... 
 
     def _sanity_check(self) -> None: 
@@ -176,3 +174,15 @@ class Flux(ABC, Generic[P]):
             raise AttributeError(
                 "flux was marked to have diffusive terms but diffusive analytical flux not given"
             )
+        
+def tests():
+    from dg.physics.pde import PDE
+
+    class Euler(PDE): pass
+
+    class Test(ConvectiveAnalyticalFlux[Euler]):
+        def compute(self, physics: Euler, u: Array) -> Array:
+            return super().compute(physics, u)
+
+if __name__ == "__main__":
+    tests()
