@@ -4,13 +4,12 @@ from typing import Generic, Mapping, Optional, Any, Type, TypeVar, TYPE_CHECKING
 from jax import jit
 from jaxtyping import Array, Float64
 
-from dg.physics.interfaces import InterfaceType
+from dg.physics.interfaces import InterfaceType, Interfaces
 from dg.utils.decorators import compose, autorepr, immutable
 from dg.utils.todo import todo
 
 if TYPE_CHECKING:
     from dg.physics.pde import PDE
-    from dg.physics.interfaces import InterfaceType, Interfaces
 
 class _Convective:
     """A marker trait for convective terms"""
@@ -120,6 +119,7 @@ class ConvectiveNumericalFluxDispatch(_FluxDispatch[P, ConvectiveNumericalFlux[P
             mapping: Mapping[InterfaceType[P], ConvectiveNumericalFlux[P]]
         ) -> None:
         self._dispatch = mapping
+        self.sanity_check()
 
     def get_numerical_flux_function_on(self, interface: InterfaceType) -> ConvectiveNumericalFlux[P]:
         return super().get_numerical_flux_function_on(interface)
@@ -131,11 +131,12 @@ class DiffusiveNumericalFluxDispatch(_FluxDispatch[P, DiffusiveNumericalFlux[P]]
             mapping: Mapping[InterfaceType[P], DiffusiveNumericalFlux[P]]
         ) -> None:
         self._dispatch = mapping
+        self.sanity_check()
 
     def get_numerical_flux_function_on(self, interface: InterfaceType[P]) -> DiffusiveNumericalFlux[P]:
         return super().get_numerical_flux_function_on(interface)
 
-P = TypeVar('P', bound = "PDE")
+P = TypeVar('P', bound = "PDE", covariant = True)
 @compose(autorepr, immutable)
 class Flux(ABC, Generic[P]):
     _convective_analytical_flux:         Optional[ConvectiveAnalyticalFlux[P]]
@@ -145,17 +146,16 @@ class Flux(ABC, Generic[P]):
 
     def __init__(
             self, 
-            convective_analytical_flux: Optional[ConvectiveAnalyticalFlux[P]],
-            diffusive_analytical_flux:  Optional[DiffusiveAnalyticalFlux[P]], 
-            convective_numerical_flux_dispatch:  Optional[ConvectiveNumericalFluxDispatch[P]], 
-            diffusive_numerical_flux_dispatch:   Optional[DiffusiveNumericalFluxDispatch[P]],
+            convective_analytical_flux:         Optional[ConvectiveAnalyticalFlux[P]],
+            diffusive_analytical_flux:          Optional[DiffusiveAnalyticalFlux[P]], 
+            convective_numerical_flux_dispatch: Optional[ConvectiveNumericalFluxDispatch[P]], 
+            diffusive_numerical_flux_dispatch:  Optional[DiffusiveNumericalFluxDispatch[P]],
         ) -> None:
         self._convective_analytical_flux = convective_analytical_flux
         self._diffusive_analytical_flux  = diffusive_analytical_flux
         self._convective_numerical_flux_dispatch = convective_numerical_flux_dispatch
         self._diffusive_numerical_flux_dispatch  = diffusive_numerical_flux_dispatch
         self._sanity_check()
-        super().__init__()
 
     def interfaces(self) -> Interfaces[P]:
         todo("build this collection when we init the class")
