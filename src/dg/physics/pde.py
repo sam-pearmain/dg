@@ -1,44 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Protocol, List, Optional, Type
+from typing import Generic, Protocol, List, Optional, Type, Any, TypeVar
 
 from dg.physics.constants import PhysicalConstant
-from dg.physics.interfaces import Interface, Interfaces
+from dg.physics.interfaces import InterfaceType, Interfaces
 from dg.physics.variables import StateVector, StateVariable
+from dg.physics.flux import Flux
 from dg.utils.decorators import compose, autorepr, immutable
-
-@compose(autorepr, immutable)
-class Flux(ABC):
-    _convective_analytical_flux:         Optional[ConvectiveAnalyticalFluxFunction]
-    _diffusive_analytical_flux:          Optional[DiffusiveAnalyticalFluxFunction]
-    _convective_numerical_flux_dispatch: Optional[ConvectiveNumericalFluxDispatch]
-    _diffusive_numerical_flux_dispatch:  Optional[DiffusiveNumericalFluxDispatch]
-
-    def __init__(
-            self, 
-            convective_analytical_flux_function: Optional[ConvectiveAnalyticalFluxFunction],
-            diffusive_analytical_flux_function:  Optional[DiffusiveAnalyticalFluxFunction], 
-            convective_numerical_flux_dispatch:  Optional[ConvectiveNumericalFluxDispatch], 
-            diffusive_numerical_flux_dispatch:   Optional[DiffusiveNumericalFluxDispatch],
-        ) -> None:
-        self._convective_analytical_flux = convective_analytical_flux_function
-        self._diffusive_analytical_flux  = diffusive_analytical_flux_function
-        self._convective_numerical_flux_dispatch = convective_numerical_flux_dispatch
-        self._diffusive_numerical_flux_dispatch  = diffusive_numerical_flux_dispatch
-        self._sanity_check()
-        super().__init__()
-
-    @abstractmethod
-    def interfaces(self) -> Interfaces: ...
-
-    @abstractmethod
-    def has_convective_terms(self) -> bool: ...
-    
-    @abstractmethod
-    def has_diffusive_terms(self) -> bool: ... 
-
-    def _sanity_check(self) -> None:
-        
-
 
 @compose(autorepr, immutable)
 class PDE(ABC):
@@ -61,16 +28,7 @@ class PDE(ABC):
     def interfaces(self) -> List[Interfaces]: return self.flux_mapping.interfaces()
 
 def tests():
-    @runtime_checkable
-    class Something(Protocol):
-        def true(self) -> bool: ...
-
-    class SomethingElse:
-        def true(self) -> bool: return True
-
-    instance = SomethingElse()
-
-    print(isinstance(instance, Something))
+    pass
 
 if __name__ == "__main__":
     tests()
