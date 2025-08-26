@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Protocol, List, Optional, Type, Any, TypeVar
+from typing import Generic, List, Self, TypeVar
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.interfaces import InterfaceType, Interfaces
@@ -21,14 +21,21 @@ class PDE(ABC):
 
     @property
     @abstractmethod
-    def flux_mapping(self) -> Type[Flux]:
+    def flux(self) -> Flux[Self]:
         ...
 
     @property
-    def interfaces(self) -> List[Interfaces]: return self.flux_mapping.interfaces()
+    def interfaces(self) -> Interfaces: 
+        return self.flux.interfaces()
 
 def tests():
-    pass
+    from dg.physics.flux import Flux
+    class ScalarAdvectionFlux(Flux["ScalarAdvection"]):
+        pass
+    
+    class ScalarAdvection(PDE):
+        def __init__(self, **kwds: PhysicalConstant) -> None:
+            super().__init__(**kwds)
 
 if __name__ == "__main__":
     tests()

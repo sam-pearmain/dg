@@ -6,6 +6,7 @@ from jaxtyping import Array, Float64
 
 from dg.physics.interfaces import InterfaceType
 from dg.utils.decorators import compose, autorepr, immutable
+from dg.utils.todo import todo
 
 if TYPE_CHECKING:
     from dg.physics.pde import PDE
@@ -156,8 +157,8 @@ class Flux(ABC, Generic[P]):
         self._sanity_check()
         super().__init__()
 
-    @abstractmethod
-    def interfaces(self) -> Interfaces[P]: ...
+    def interfaces(self) -> Interfaces[P]:
+        todo("build this collection when we init the class")
 
     @abstractmethod
     def has_convective_terms(self) -> bool: ...
