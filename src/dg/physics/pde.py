@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, List, Self, TypeVar, Type
+from typing import Generic, TypeVar
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.interfaces import InterfaceType, Interfaces
@@ -10,6 +10,8 @@ from dg.utils.decorators import compose, autorepr, immutable
 P = TypeVar('P', bound = "PDE")
 @compose(autorepr, immutable)
 class PDE(ABC, Generic[P]):
+    _flux: Flux[P]
+
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds.items():
             setattr(self, key, value)
@@ -21,13 +23,13 @@ class PDE(ABC, Generic[P]):
         ...
 
     @property
-    @abstractmethod
     def flux(self) -> Flux[P]:
+        return self._flux
         ...
 
     @property
     def interfaces(self) -> Interfaces: 
-        return self.flux.interfaces()
+        return self._flux.interfaces()
 
 def tests():
     from dg.physics.flux import Flux
@@ -40,6 +42,7 @@ def tests():
             return False
     
     class ScalarAdvection(PDE):
+        _flux: Flux["ScalarAdvection"] = ScalarAdvectionFlux()
         a: PhysicalConstant = PhysicalConstant(1.0)
 
         def __init__(self, **kwds: PhysicalConstant) -> None:
@@ -52,12 +55,12 @@ def tests():
             ])
         
         @property
-        def flux(self) -> ScalarAdvectionFlux:
+        def flux(self) -> Flux["ScalarAdvection"]:
             return ScalarAdvectionFlux(
                 None, 
                 None, 
                 None, 
-                None,
+                None, 
             )
         
     pde = ScalarAdvection()
