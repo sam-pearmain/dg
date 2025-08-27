@@ -1,63 +1,41 @@
-import jax
-
 from abc import ABC, abstractmethod
-from typing import Generic, Mapping, Optional, Any, Protocol, TypeVar, TypeAlias, NewType, TYPE_CHECKING
-
+from typing import overload, Generic, Any, Literal, TypeVar, TYPE_CHECKING
 from jaxtyping import Array, Float64
-
-from dg.physics.interfaces import InterfaceType, Interfaces
-from dg.utils.decorators import compose, autorepr, immutable
-from dg.utils.todo import todo
 
 if TYPE_CHECKING:
     from dg.physics.pde import PDE
 
-class _Convective(Protocol):
-    """A marker trait for convective terms"""
-    def is_convective(self) -> bool: return True
-
-class _Diffusive(Protocol):
-    """A marker trait for diffusive terms"""
-    def is_diffusive(self) -> bool: return True
 
 class _Function(ABC):
     """A stateless, jax-friendly function designed to be namespaced"""
-    def __call__(self, *args: Any, **kwds: Any) -> Any: 
-        return self._func(args, kwds)
-
-    @staticmethod
     @abstractmethod
-    def _func(*args: Any, **kwds: Any) -> Any: ...
+    def __call__(self, *args: Any, **kwds: Any) -> Any: ...
 
 P = TypeVar('P', bound = "PDE")
 class _FluxFunction(_Function, Generic[P]):
-    @staticmethod
     @abstractmethod
-    def _func(pde: P, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, pde: P, *args: Any, **kwds: Any) -> Any:
         ...
 
 P = TypeVar('P', bound = "PDE")
-class _NumericalFluxFunction(_FluxFunction[P]):
-    @staticmethod
-    @abstractmethod
-    def defined_on_interface() -> InterfaceType[P]: ...
+class _NumericalFluxFunction(_FluxFunction[P]): ...
 
 P = TypeVar('P', bound = "PDE")
-class ConvectiveAnalyticalFlux(_Convective, _FluxFunction[P]): # type: ignore 
-    @staticmethod
+class ConvectiveAnalyticalFlux(_FluxFunction[P]): # type: ignore 
     @abstractmethod
-    def _func(
-            physics: P, 
+    def __call__(
+            self, 
+            pde: P, 
             u: Float64[Array, "n_q n_s"],
         ) -> Float64[Array, "n_q n_s"]:
         ...
     
 P = TypeVar('P', bound = "PDE")
-class DiffusiveAnalyticalFlux(_Diffusive, Generic[P]):
-    @staticmethod
+class DiffusiveAnalyticalFlux(Generic[P]):
     @abstractmethod
-    def _func(
-            physics: P, 
+    def __call__(
+            self, 
+            pde: P, 
             u: Float64[Array, "n_q n_s"],
             grad_u: Float64[Array, "n_q n_s n_d"]
         ) -> Float64[Array, "n_q n_s"]:
@@ -65,119 +43,141 @@ class DiffusiveAnalyticalFlux(_Diffusive, Generic[P]):
 
 P = TypeVar('P', bound = "PDE")
 class ConvectiveNumericalFlux(_NumericalFluxFunction[P]):
-    @staticmethod
     @abstractmethod
-    def _func(
-            physics: P, 
+    def __call__(
+            self, 
+            pde: P, 
             u_l: Float64[Array, "n_q n_s"],
             u_r: Float64[Array, "n_q n_s"], 
-            normals: Float64[Array, "n_q n_d"],
+            n_vec: Float64[Array, "n_q n_d"],
         ) -> Float64[Array, "n_q n_s"]:
         ...
 
-
 P = TypeVar('P', bound = "PDE")
 class DiffusiveNumericalFlux(_NumericalFluxFunction[P]):
-    @staticmethod
     @abstractmethod
-    def _func(
-            physics: P, 
+    def __call__(
+            self, 
+            pde: P, 
             u_l: Float64[Array, "n_q n_s"],
             u_r: Float64[Array, "n_q n_s"], 
             grad_u_l: Float64[Array, "n_q n_s n_d"],
             grad_u_r: Float64[Array, "n_q n_s n_d"],
-            normals: Float64[Array, "n_q n_d"],
+            n_vec: Float64[Array, "n_q n_d"],
         ) -> Float64[Array, "n_q n_s"]:
         ...
 
 P = TypeVar('P', bound = "PDE")
-N = TypeVar('N', bound = _NumericalFluxFunction)
-class _FluxDispatch(ABC, Generic[P, N]):
-    _dispatch: Mapping[InterfaceType[P], N]
+class Convective(Generic[P]):
+    """A convective flux mixin for the lovely autocompletion"""
+    _convective_analytical_flux: ConvectiveAnalyticalFlux[P]
+    _convective_numerical_flux:  ConvectiveNumericalFlux[P]
 
-    @abstractmethod
-    def get_numerical_flux_function_on(self, interface: InterfaceType[P]) -> N: 
-        return self._dispatch[interface]
-    
-    def sanity_check(self) -> None:
-        if not self._dispatch:
-            raise AttributeError("no flux dispatch defined")
-        
-        for interface_type, numerical_flux_function in self._dispatch.items():
-            if numerical_flux_function.defined_on_interface() != interface_type:
-                raise AttributeError(
-                    f"mismatch interface and numerical flux function: \n"
-                    f"  numerical flux: {numerical_flux_function} \n"
-                    f"  defined on: {numerical_flux_function.defined_on_interface()} \n"
-                    f"  but assigned to {interface_type}"
-                )
-
-P = TypeVar('P', bound = "PDE")
-class ConvectiveNumericalFluxDispatch(_FluxDispatch[P, ConvectiveNumericalFlux[P]]):
-    def __init__(
+    def compute_convective_analytical_flux(
             self, 
-            mapping: Mapping[InterfaceType[P], ConvectiveNumericalFlux[P]]
-        ) -> None:
-        self._dispatch = mapping
-        self.sanity_check()
-
-    def get_numerical_flux_function_on(self, interface: InterfaceType) -> ConvectiveNumericalFlux[P]:
-        return super().get_numerical_flux_function_on(interface)
+            pde: P, 
+            u: Float64[Array, "n_q n_s"],
+        ) -> Float64[Array, "n_q n_s"]:
+        return self._convective_analytical_flux(pde, u)
+    
+    def compute_convective_numerical_flux(
+            self, 
+            pde: P, 
+            u_l: Float64[Array, "n_q n_s"],
+            u_r: Float64[Array, "n_q n_s"], 
+            n_vec: Float64[Array, "n_q n_d"]
+        ) -> Float64[Array, "n_q n_s"]:
+        return self._convective_numerical_flux(pde, u_l, u_r, n_vec)
 
 P = TypeVar('P', bound = "PDE")
-class DiffusiveNumericalFluxDispatch(_FluxDispatch[P, DiffusiveNumericalFlux[P]]):
-    def __init__(
-            self,
-            mapping: Mapping[InterfaceType[P], DiffusiveNumericalFlux[P]]
-        ) -> None:
-        self._dispatch = mapping
-        self.sanity_check()
+class Diffusive(Generic[P]):
+    """A diffusive flux mixin for the lovely autocompletion"""
+    _diffusive_analytical_flux: DiffusiveAnalyticalFlux[P]
+    _diffusive_numerical_flux:  DiffusiveNumericalFlux[P]
 
-    def get_numerical_flux_function_on(self, interface: InterfaceType[P]) -> DiffusiveNumericalFlux[P]:
-        return super().get_numerical_flux_function_on(interface)
+    def compute_diffusive_analytical_flux(
+            self, 
+            pde: P, 
+            u: Float64[Array, "n_q n_s"],
+            grad_u: Float64[Array, "n_q n_s n_d"],
+        ) -> Float64[Array, "n_q n_s"]:
+        return self._diffusive_analytical_flux(pde, u, grad_u)
+    
+    def compute_diffusive_numerical_flux(
+            self, 
+            pde: P, 
+            u_l: Float64[Array, "n_q n_s"],
+            u_r: Float64[Array, "n_q n_s"],
+            grad_u_l: Float64[Array, "n_q n_s n_d"],
+            grad_u_r: Float64[Array, "n_q n_s n_d"], 
+            n_vec: Float64[Array, "n_q n_d"]
+        ) -> Float64[Array, "n_q n_s"]:
+        return self._diffusive_numerical_flux(pde, u_l, u_r, grad_u_l, 
+                                              grad_u_r, n_vec)
 
-P = TypeVar('P', bound = "PDE", covariant = True)
-@compose(autorepr, immutable)
+P = TypeVar('P', bound = "PDE")
 class Flux(ABC, Generic[P]):
-    _convective_analytical_flux:         Optional[ConvectiveAnalyticalFlux[P]]
-    _diffusive_analytical_flux:          Optional[DiffusiveAnalyticalFlux[P]]
-    _convective_numerical_flux_dispatch: Optional[ConvectiveNumericalFluxDispatch[P]]
-    _diffusive_numerical_flux_dispatch:  Optional[DiffusiveNumericalFluxDispatch[P]]
+    _convective_analytical_flux: ConvectiveAnalyticalFlux[P] | None
+    _convective_numerical_flux:  ConvectiveNumericalFlux[P]  | None
+    _diffusive_analytical_flux:  DiffusiveAnalyticalFlux[P]  | None
+    _diffusive_numerical_flux:   DiffusiveNumericalFlux[P]   | None
+
+    @overload
+    def __init__(
+            self, *,
+            convective_analytical_flux: ConvectiveAnalyticalFlux[P],
+            convective_numerical_flux:  ConvectiveNumericalFlux[P], 
+            diffusive_analytical_flux:  Literal[None] = None, 
+            diffusive_numerical_flux:   Literal[None] = None,
+        ) -> None: ...
+
+    @overload
+    def __init__(
+            self, *,  
+            convective_analytical_flux: Literal[None] = None,
+            convective_numerical_flux:  Literal[None] = None, 
+            diffusive_analytical_flux:  DiffusiveAnalyticalFlux[P],
+            diffusive_numerical_flux:   DiffusiveNumericalFlux[P],
+        ) -> None: ...
+
+    @overload
+    def __init__(
+            self, *, 
+            convective_analytical_flux: ConvectiveAnalyticalFlux[P],
+            convective_numerical_flux:  ConvectiveNumericalFlux[P], 
+            diffusive_analytical_flux:  DiffusiveAnalyticalFlux[P],
+            diffusive_numerical_flux:   DiffusiveNumericalFlux[P],
+        ) -> None: ...
 
     def __init__(
-            self, 
-            convective_analytical_flux:         Optional[ConvectiveAnalyticalFlux[P]],
-            diffusive_analytical_flux:          Optional[DiffusiveAnalyticalFlux[P]], 
-            convective_numerical_flux_dispatch: Optional[ConvectiveNumericalFluxDispatch[P]], 
-            diffusive_numerical_flux_dispatch:  Optional[DiffusiveNumericalFluxDispatch[P]],
-        ) -> None:
+        self, *, 
+        convective_analytical_flux: ConvectiveAnalyticalFlux[P] | None = None,
+        convective_numerical_flux:  ConvectiveNumericalFlux[P]  | None = None, 
+        diffusive_analytical_flux:  DiffusiveAnalyticalFlux[P]  | None = None, 
+        diffusive_numerical_flux:   DiffusiveNumericalFlux[P]   | None = None,
+    ) -> None:
+        if convective_numerical_flux and not convective_analytical_flux:
+            raise ValueError(
+                "cannot have convective numerical flux without convective analytical flux"
+            )
+        if diffusive_numerical_flux and not diffusive_analytical_flux:
+            raise ValueError(
+                "cannot have diffusive numerical flux without diffusive analytical flux"
+            )
+        
         self._convective_analytical_flux = convective_analytical_flux
+        self._convective_numerical_flux  = convective_numerical_flux
         self._diffusive_analytical_flux  = diffusive_analytical_flux
-        self._convective_numerical_flux_dispatch = convective_numerical_flux_dispatch
-        self._diffusive_numerical_flux_dispatch  = diffusive_numerical_flux_dispatch
-        self._sanity_check()
-
-    def interfaces(self) -> Interfaces[P]:
-        todo("build this collection when we init the class")
-
-    def has_convective_terms(self) -> bool: ...
+        self._diffusive_numerical_flux   = diffusive_numerical_flux
     
-    def has_diffusive_terms(self) -> bool: ... 
-
-    def _sanity_check(self) -> None: 
-        if self.has_convective_terms() and not self._convective_analytical_flux:
-            raise AttributeError(
-                "flux was marked to have convective terms but convective analytical flux not given"
-            )
-
-        if self.has_diffusive_terms() and not self._diffusive_analytical_flux:
-            raise AttributeError(
-                "flux was marked to have diffusive terms but diffusive analytical flux not given"
-            )
+    def has_convective_terms(self) -> bool: 
+        return True if self._convective_analytical_flux else False
+    
+    def has_diffusive_terms(self) -> bool: 
+        return True if self._diffusive_analytical_flux else False
         
 def tests():
-    from dg.physics.pde import PDE
-    from dg.physics.flux import ConvectiveAnalyticalFlux, ConvectiveNumericalFlux, ConvectiveNumericalFluxDispatch
+    pass
 
 if __name__ == "__main__":
     tests()
