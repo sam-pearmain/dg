@@ -1,7 +1,7 @@
 import jax
 
 from abc import ABC, abstractmethod
-from typing import Generic, Mapping, Optional, Any, Protocol, TypeVar, TYPE_CHECKING
+from typing import Generic, Mapping, Optional, Any, Protocol, TypeVar, TypeAlias, NewType, TYPE_CHECKING
 
 from jaxtyping import Array, Float64
 
@@ -21,30 +21,32 @@ class _Diffusive(Protocol):
     def is_diffusive(self) -> bool: return True
 
 class _Function(ABC):
+    """A stateless, jax-friendly function designed to be namespaced"""
     def __call__(self, *args: Any, **kwds: Any) -> Any: 
-        return self._call_impl(args, kwds)
+        return self._func(args, kwds)
 
+    @staticmethod
     @abstractmethod
-    def _call_impl(self, *args: Any, **kwds: Any) -> Any: ...
-
-class Test(_Function):
-    @jax.jit
-    def _call_impl(self, *args: Any, **kwds: Any) -> Any:
-        
+    def _func(*args: Any, **kwds: Any) -> Any: ...
 
 P = TypeVar('P', bound = "PDE")
-class _NumericalFluxFunction(_Function, Generic[P]):
-    @property
-    def _DEFINED_ON_INTERFACE(self) -> InterfaceType[P]: ...
-    
-    def __call__(self, physics: P, *args: Any, **kwds: Any) -> Any: ...
-
-    def defined_on(self) -> InterfaceType[P]: return self._DEFINED_ON_INTERFACE 
+class _FluxFunction(_Function, Generic[P]):
+    @staticmethod
+    @abstractmethod
+    def _func(pde: P, *args: Any, **kwds: Any) -> Any:
+        ...
 
 P = TypeVar('P', bound = "PDE")
-class ConvectiveAnalyticalFlux(_Convective, Protocol, Generic[P]): # type: ignore 
-    def compute(
-            self, 
+class _NumericalFluxFunction(_FluxFunction[P]):
+    @staticmethod
+    @abstractmethod
+    def defined_on_interface() -> InterfaceType[P]: ...
+
+P = TypeVar('P', bound = "PDE")
+class ConvectiveAnalyticalFlux(_Convective, _FluxFunction[P]): # type: ignore 
+    @staticmethod
+    @abstractmethod
+    def _func(
             physics: P, 
             u: Float64[Array, "n_q n_s"],
         ) -> Float64[Array, "n_q n_s"]:
@@ -52,9 +54,9 @@ class ConvectiveAnalyticalFlux(_Convective, Protocol, Generic[P]): # type: ignor
     
 P = TypeVar('P', bound = "PDE")
 class DiffusiveAnalyticalFlux(_Diffusive, Generic[P]):
-    @jit
-    def __call__(
-            self, 
+    @staticmethod
+    @abstractmethod
+    def _func(
             physics: P, 
             u: Float64[Array, "n_q n_s"],
             grad_u: Float64[Array, "n_q n_s n_d"]
@@ -63,10 +65,9 @@ class DiffusiveAnalyticalFlux(_Diffusive, Generic[P]):
 
 P = TypeVar('P', bound = "PDE")
 class ConvectiveNumericalFlux(_NumericalFluxFunction[P]):
-    @jit
+    @staticmethod
     @abstractmethod
-    def __call__(
-            self, 
+    def _func(
             physics: P, 
             u_l: Float64[Array, "n_q n_s"],
             u_r: Float64[Array, "n_q n_s"], 
@@ -77,10 +78,9 @@ class ConvectiveNumericalFlux(_NumericalFluxFunction[P]):
 
 P = TypeVar('P', bound = "PDE")
 class DiffusiveNumericalFlux(_NumericalFluxFunction[P]):
-    @jit
+    @staticmethod
     @abstractmethod
-    def compute(
-            self, 
+    def _func(
             physics: P, 
             u_l: Float64[Array, "n_q n_s"],
             u_r: Float64[Array, "n_q n_s"], 
@@ -104,11 +104,11 @@ class _FluxDispatch(ABC, Generic[P, N]):
             raise AttributeError("no flux dispatch defined")
         
         for interface_type, numerical_flux_function in self._dispatch.items():
-            if numerical_flux_function.defined_on() != interface_type:
+            if numerical_flux_function.defined_on_interface() != interface_type:
                 raise AttributeError(
                     f"mismatch interface and numerical flux function: \n"
                     f"  numerical flux: {numerical_flux_function} \n"
-                    f"  defined on: {numerical_flux_function.defined_on()} \n"
+                    f"  defined on: {numerical_flux_function.defined_on_interface()} \n"
                     f"  but assigned to {interface_type}"
                 )
 
@@ -177,12 +177,7 @@ class Flux(ABC, Generic[P]):
         
 def tests():
     from dg.physics.pde import PDE
-
-    class Euler(PDE): pass
-
-    class Test(ConvectiveAnalyticalFlux[Euler]):
-        def compute(self, physics: Euler, u: Array) -> Array:
-            return super().compute(physics, u)
+    from dg.physics.flux import ConvectiveAnalyticalFlux, ConvectiveNumericalFlux, ConvectiveNumericalFluxDispatch
 
 if __name__ == "__main__":
     tests()
