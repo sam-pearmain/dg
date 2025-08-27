@@ -1,15 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import overload, Generic, Any, Literal, TypeVar, TYPE_CHECKING
+from typing import overload, Generic, Any, Callable, Literal, TypeVar, ParamSpec, Self, TYPE_CHECKING
 from jaxtyping import Array, Float64
 
 if TYPE_CHECKING:
     from dg.physics.pde import PDE
 
 
-class _Function(ABC):
+P = ParamSpec('P')
+R = TypeVar('R') # the return type
+T = TypeVar('T', bound = "_Function")
+class _Function(ABC, Generic[P, R]):
     """A stateless, jax-friendly function designed to be namespaced"""
     @abstractmethod
-    def __call__(self, *args: Any, **kwds: Any) -> Any: ...
+    def __call__(self, *args: Any, **kwds: Any) -> Any: ...        
 
 P = TypeVar('P', bound = "PDE")
 class _FluxFunction(_Function, Generic[P]):

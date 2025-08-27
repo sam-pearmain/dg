@@ -13,7 +13,7 @@ class InterfaceType(Generic[P]):
         self.name = name.lower()
 
     def is_interior(self) -> bool:
-        return True if self.name is "interior" else False
+        return True if self.name == "interior" else False
 
 P = TypeVar('P', bound = "PDE")
 class Interfaces(Generic[P]):

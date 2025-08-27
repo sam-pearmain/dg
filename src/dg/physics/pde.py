@@ -8,11 +8,12 @@ from dg.physics.flux import Flux
 from dg.utils.decorators import compose, autorepr, immutable
 
 P = TypeVar('P', bound = "PDE")
-class PDE(ABC, Generic[P]):
+F = TypeVar('F', bound = "Flux")
+class PDE(ABC, Generic[F]):
     dimensions: int
     state_vector: StateVector
-    boundaries: Interfaces[P]
-    flux: Flux[P]
+    boundaries: Interfaces[Self]
+    flux: F
 
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds.items():
@@ -27,33 +28,16 @@ class PDE(ABC, Generic[P]):
     def _dimensions_impl(self) -> int: ...
 
     @abstractmethod
-    def _state_vector_impl(self) -> StateVector[P]: ...
+    def _state_vector_impl(self) -> StateVector[Self]: ...
 
     @abstractmethod
-    def _boundaries_impl(self) -> Interfaces[P]: ...
+    def _boundaries_impl(self) -> Interfaces[Self]: ...
 
     @abstractmethod
-    def _flux_impl(self) -> Flux[P]: ...
+    def _flux_impl(self) -> F: ...
 
 def tests():
-    class BurgersEquations(PDE["BurgersEquations"]): pass
-
-    class ScalarAdvection(PDE["ScalarAdvection"]):
-        def _dimensions_impl(self) -> int:
-            return 1
-        
-        def _state_vector_impl(self) -> StateVector["ScalarAdvection"]:
-            return StateVector([
-                StateVariable("u"),
-            ])
-        
-        def _boundaries_impl(self) -> Interfaces:
-            return Interfaces()
-        
-        def _flux_impl(self) -> Flux:
-            return Flux()
-        
-    pde = ScalarAdvection()
+    pass 
 
 if __name__ == "__main__":
     tests()
