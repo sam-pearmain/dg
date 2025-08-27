@@ -10,10 +10,7 @@ class InterfaceType(Generic[P]):
     name: str
 
     def __init__(self, name: str) -> None:
-        self.name = name
-
-    def __repr__(self) -> str:
-        return f"Interface {{ name: {self.name} }}"
+        self.name = name.lower()
 
     def is_interior(self) -> bool:
         return True if self.name is "interior" else False
@@ -24,9 +21,6 @@ class Interfaces(Generic[P]):
 
     def __init__(self, interfaces: Mapping[int, InterfaceType[P]]) -> None:
         self._interfaces = interfaces
-
-    def __repr__(self) -> str:
-        return f"Interfaces {{ _interfaces: {self._interfaces} }}"
 
     def __iter__(self) -> Iterable:
         return self._interfaces.values()

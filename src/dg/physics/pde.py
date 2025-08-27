@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Any
+from typing import Generic, TypeVar, Self
 
 from dg.physics.constants import PhysicalConstant
 from dg.physics.interfaces import InterfaceType, Interfaces
@@ -8,34 +8,52 @@ from dg.physics.flux import Flux
 from dg.utils.decorators import compose, autorepr, immutable
 
 P = TypeVar('P', bound = "PDE")
-@compose(autorepr, immutable)
 class PDE(ABC, Generic[P]):
-    _flux: Flux[P]
-    _interfaces: Interfaces[P]
+    dimensions: int
+    state_vector: StateVector
+    boundaries: Interfaces[P]
+    flux: Flux[P]
 
     def __init__(self, **kwds: PhysicalConstant) -> None:
         for key, value in kwds.items():
             setattr(self, key, value)
-        super().__init__()
+        
+        self.dimensions = self._dimensions_impl()
+        self.state_vector = self._state_vector_impl()
+        self.boundaries = self._boundaries_impl()
+        self.flux = self._flux_impl()
 
-    @property
     @abstractmethod
-    def n_dimensions(self) -> int: ...
+    def _dimensions_impl(self) -> int: ...
 
-    @property
     @abstractmethod
-    def state_vector(self) -> StateVector: ...
+    def _state_vector_impl(self) -> StateVector[P]: ...
 
-    @property
     @abstractmethod
-    def interfaces(self) -> Interfaces: ...
+    def _boundaries_impl(self) -> Interfaces[P]: ...
 
-    @property
-    def flux(self) -> Flux[P]:
-        return self._flux
+    @abstractmethod
+    def _flux_impl(self) -> Flux[P]: ...
 
 def tests():
-    pass
+    class BurgersEquations(PDE["BurgersEquations"]): pass
+
+    class ScalarAdvection(PDE["ScalarAdvection"]):
+        def _dimensions_impl(self) -> int:
+            return 1
+        
+        def _state_vector_impl(self) -> StateVector["ScalarAdvection"]:
+            return StateVector([
+                StateVariable("u"),
+            ])
+        
+        def _boundaries_impl(self) -> Interfaces:
+            return Interfaces()
+        
+        def _flux_impl(self) -> Flux:
+            return Flux()
+        
+    pde = ScalarAdvection()
 
 if __name__ == "__main__":
     tests()

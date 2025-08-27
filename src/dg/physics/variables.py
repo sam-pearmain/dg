@@ -1,10 +1,13 @@
-from typing import Any, Optional, Union, List, Mapping
+from typing import Any, Optional, Generic, TypeVar, List, Mapping, TYPE_CHECKING
 
 from dg.utils.uninit import Uninit
 from dg.utils.decorators import compose, immutable, autorepr, autostr
 
-@compose(autorepr, autostr)
-class StateVariable:
+if TYPE_CHECKING:
+    from dg.physics.pde import PDE 
+
+P = TypeVar('P', bound = "PDE")
+class StateVariable(Generic[P]):
     """A single state variable"""
     _var_str: str            # the variable's name
     _tex_str: Optional[str]  # the variable's tex representation, "\rho" for example
@@ -23,21 +26,21 @@ class StateVariable:
     @property
     def tex(self) -> str:
         return self._tex_str if self._tex_str else f"_undefined_"
-    
-@compose(immutable, autorepr, autostr)
-class StateVector:
-    """A container for the state variables"""
-    _vars: List[StateVariable]
-    _name_map: Mapping[str, StateVariable]
 
-    def __init__(self, vars: List[StateVariable]) -> None:
+P = TypeVar('P', bound = "PDE")    
+class StateVector(Generic[P]):
+    """A container for the state variables"""
+    _vars: List[StateVariable[P]]
+    _name_map: Mapping[str, StateVariable[P]]
+
+    def __init__(self, vars: List[StateVariable[P]]) -> None:
         self._vars = vars
         self._name_map = {var._var_str: var for var in vars}
 
     def __iter__(self):
         return iter(self._vars)
 
-    def __getitem__(self, idx: int) -> StateVariable:
+    def __getitem__(self, idx: int) -> StateVariable[P]:
         return self._vars[idx]
 
     def __getattr__(self, name: str) -> Any:
