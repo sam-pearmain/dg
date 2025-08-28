@@ -6,7 +6,7 @@ from dg.utils.decorators import compose, immutable, autorepr, autostr
 if TYPE_CHECKING:
     from dg.physics.pde import PDE 
 
-P = TypeVar('P', bound = "PDE")
+P = TypeVar('P', bound = "PDE", covariant = True)
 class StateVariable(Generic[P]):
     """A single state variable"""
     _var_str: str            # the variable's name
@@ -27,7 +27,7 @@ class StateVariable(Generic[P]):
     def tex(self) -> str:
         return self._tex_str if self._tex_str else f"_undefined_"
 
-P = TypeVar('P', bound = "PDE")    
+P = TypeVar('P', bound = "PDE", covariant = True)    
 class StateVector(Generic[P]):
     """A container for the state variables"""
     _vars: List[StateVariable[P]]

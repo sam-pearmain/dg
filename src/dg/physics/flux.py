@@ -119,7 +119,7 @@ class Diffusive(Generic[P]):
                                               grad_u_r, n_vec)
 
 P = TypeVar('P', bound = "PDE")
-class Flux(ABC, Generic[P]):
+class Flux(Generic[P]):
     _convective_analytical_flux: ConvectiveAnalyticalFlux[P] | None
     _convective_numerical_flux:  ConvectiveNumericalFlux[P]  | None
     _diffusive_analytical_flux:  DiffusiveAnalyticalFlux[P]  | None

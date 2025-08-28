@@ -5,13 +5,12 @@ from dg.physics.constants import PhysicalConstant
 from dg.physics.interfaces import InterfaceType, Interfaces
 from dg.physics.variables import StateVector, StateVariable
 from dg.physics.flux import Flux
-from dg.utils.decorators import compose, autorepr, immutable
 
 P = TypeVar('P', bound = "PDE")
 F = TypeVar('F', bound = "Flux")
 class PDE(ABC, Generic[F]):
     dimensions: int
-    state_vector: StateVector
+    state_vector: StateVector[Self]
     boundaries: Interfaces[Self]
     flux: F
 
@@ -37,7 +36,22 @@ class PDE(ABC, Generic[F]):
     def _flux_impl(self) -> F: ...
 
 def tests():
-    pass 
+    from dg.physics.pde import PDE
+    from dg.physics.flux import Flux
+    class ScalarAdvection(PDE["ScalarAdvectionFlux"]):
+        def _dimensions_impl(self) -> int:
+            return 1
+        
+        def _state_vector_impl(self) -> StateVector[Self]:
+            return StateVector[Self]([
+                StateVariable[Self]("u")
+            ])
+        
+        def _boundaries_impl(self) -> Interfaces[Self]:
+            pass
+
+    class ScalarAdvectionFlux(Flux[ScalarAdvection]):
+        pass
 
 if __name__ == "__main__":
     tests()
