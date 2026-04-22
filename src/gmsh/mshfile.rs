@@ -3,7 +3,6 @@ use std::{collections::HashMap, hash::Hash};
 use anyhow::{Ok, Result, bail};
 use ndarray::{Array1, Array2};
 use num::{Float, FromPrimitive, Integer, Signed};
-use num_derive::FromPrimitive;
 use num_traits::Unsigned;
 
 /// Trait for msh file usize_t types
