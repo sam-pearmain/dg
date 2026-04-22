@@ -1,27 +1,31 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, hash::Hash, str::FromStr};
 
 use anyhow::{Ok, Result, bail};
 use ndarray::{Array1, Array2};
 use num::{Float, FromPrimitive, Integer, Signed};
-use num_traits::Unsigned;
+use num_traits::{ToPrimitive, Unsigned};
+use winnow::binary::Endianness;
 
 /// Trait for msh file usize_t types
-pub trait MshUsizeType: Unsigned + Integer + Clone + Copy + Hash + FromPrimitive {}
+pub trait MshUsizeType:
+    Unsigned + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString
+{
+}
 
 /// Trait for msh file int types
-pub trait MshIntType: Signed + Integer + Clone + Copy + Hash + FromPrimitive {}
+pub trait MshIntType:
+    Signed + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString
+{
+}
 
 /// Trait for msh file float types
-pub trait MshFloatType: Float + Clone + Copy + Hash + FromPrimitive {}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Endianness {
-    Big,
-    Little,
+pub trait MshFloatType:
+    Float + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString
+{
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum MshFileType {
+pub enum MshDataFormat {
     Ascii,
     Binary,
 }
@@ -34,8 +38,8 @@ pub struct MshFile<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct MshHeader {
     pub version: String,
-    pub file_type: i32,
-    pub size_t_size: usize,
+    pub format: MshDataFormat,
+    pub data_size: usize,
     pub int_size: usize,
     pub float_size: usize,
     pub endianness: Option<Endianness>,
