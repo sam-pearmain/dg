@@ -21,19 +21,20 @@ pub enum Endianness {
     Little,
 }
 
-pub struct MshFile<U, I, F>
-where
-    U: MshUsizeType,
-    I: MshIntType,
-    F: MshFloatType,
-{
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum MshFileType {
+    Ascii,
+    Binary,
+}
+
+pub struct MshFile<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub header: MshHeader,
     pub data: MshData<U, I, F>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MshHeader {
-    pub version: f64,
+    pub version: String,
     pub file_type: i32,
     pub size_t_size: usize,
     pub int_size: usize,
@@ -41,23 +42,14 @@ pub struct MshHeader {
     pub endianness: Option<Endianness>,
 }
 
-pub struct MshData<U, I, F>
-where
-    U: MshUsizeType,
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct MshData<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub entities: Option<Entities<I, F>>,
     pub nodes: Option<Nodes<U, I, F>>,
     pub elements: Option<Elements<U, I>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Entities<I, F>
-where
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct Entities<I: MshIntType, F: MshFloatType> {
     pub points: Vec<Point<I, F>>,
     pub curves: Vec<Curve<I, F>>,
     pub surfaces: Vec<Surface<I, F>>,
@@ -65,11 +57,7 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Point<I, F>
-where
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct Point<I: MshIntType, F: MshFloatType> {
     pub tag: I,
     pub x: F,
     pub y: F,
@@ -78,11 +66,7 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Curve<I, F>
-where
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct Curve<I: MshIntType, F: MshFloatType> {
     pub tag: I,
     pub min_x: F,
     pub min_y: F,
@@ -94,11 +78,7 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Surface<I, F>
-where
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct Surface<I: MshIntType, F: MshFloatType> {
     pub tag: I,
     pub min_x: F,
     pub min_y: F,
@@ -110,11 +90,7 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Volume<I, F>
-where
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct Volume<I: MshIntType, F: MshFloatType> {
     pub tag: I,
     pub min_x: F,
     pub min_y: F,
@@ -126,12 +102,7 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Nodes<U, I, F>
-where
-    U: MshUsizeType,
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct Nodes<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub n_nodes: U,
     pub min_node_tag: U,
     pub max_node_tag: U,
@@ -139,25 +110,15 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct NodeBlock<U, I, F>
-where
-    U: MshUsizeType,
-    I: MshIntType,
-    F: MshFloatType,
-{
+pub struct NodeBlock<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub entity_dim: I,
     pub entity_tag: I,
     pub node_tags: Option<HashMap<U, usize>>,
-    /// The array of nodes: [n_nodes * n_dims]
     pub nodes: Array2<F>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Elements<U, I>
-where
-    U: MshUsizeType,
-    I: MshIntType,
-{
+pub struct Elements<U: MshUsizeType, I: MshIntType> {
     pub num_elements: U,
     pub min_element_tag: U,
     pub max_element_tag: U,
@@ -165,11 +126,7 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ElementBlock<U, I>
-where
-    U: MshUsizeType,
-    I: MshIntType,
-{
+pub struct ElementBlock<U: MshUsizeType, I: MshIntType> {
     pub entity_dim: I,
     pub entity_tag: I,
     pub element_type: GmshElementType,
@@ -178,10 +135,7 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Element<U>
-where
-    U: MshUsizeType,
-{
+pub struct Element<U: MshUsizeType> {
     pub tag: U,
     pub nodes: Array1<U>,
 }
