@@ -125,15 +125,11 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
                 .parse_next(&mut self.input)
                 .map_err(|e| anyhow!("failed to parse endianness marker: {e}"))?;
             
-            self.endianness = match u32::from_le_bytes(
-                marker
-                .try_into()
-                .map_err(|_| anyhow!("corrupt endianness marker"))?,
-            ) {
-                0x01_00_00_00 => Some(Endianness::Big),
-                0x00_00_00_01 => Some(Endianness::Little),
+            self.endianness = match marker {
+                [0x01, 0x00, 0x00, 0x00] => Some(Endianness::Little), 
+                [0x00, 0x00, 0x00, 0x01] => Some(Endianness::Big), 
                 _ => bail!("corrupt endianness marker"),
-            }
+            };
         }
         
         self.format = Some(format);
