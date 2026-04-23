@@ -59,9 +59,23 @@ pub struct MshHeader {
 }
 
 pub struct MshData<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
+    pub physical_names: Option<PhysicalNames<I>>, 
     pub entities: Option<Entities<I, F>>,
     pub nodes: Option<Nodes<U, I, F>>,
     pub elements: Option<Elements<U, I>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PhysicalNames<I: MshIntType> {
+    num_physical_names: I, 
+    names: Vec<PhysicalName<I>>, 
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PhysicalName<I: MshIntType> {
+    pub dimension: I, 
+    pub tag: I, 
+    pub name: String, 
 }
 
 #[derive(Clone, Debug, PartialEq)]

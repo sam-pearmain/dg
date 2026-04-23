@@ -10,7 +10,7 @@ use winnow::{
     token::{literal, take, take_until},
 };
 
-use crate::gmsh::mshfile::{MshDataFormat, MshFile, MshHeader};
+use crate::gmsh::mshfile::{MshDataFormat, MshFile, MshHeader, PhysicalNames};
 
 use super::mshfile::{MshFloatType, MshIntType, MshUsizeType};
 
@@ -49,7 +49,7 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
 
             match tag {
                 "$PhysicalNames" => {
-
+                    let physical_names = self.parse_physical_names()?;
                 }, 
                 "$Entities" => {
                     todo!()
@@ -90,13 +90,11 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
             }
         }
 
-        todo!()
+        Ok(MshFile { header, data: todo!() })
     }
 
     fn parse_header(&mut self) -> Result<MshHeader> {
-        literal::<_, _, ContextError>(b"$MeshFormat\n")
-            .parse_next(&mut self.input)
-            .map_err(|e| anyhow!("failed for parse mshfile header: {}", e))?;
+        self.literal(b"$MeshFormat\n")?;
 
         let (version, format, data_size) = (
             float::<_, F, ContextError>
@@ -121,9 +119,7 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
             .map_err(|e| anyhow!("failed to parse mshfile header: {e}"))?;
 
         self.line_ending()?;
-        literal::<_, _, ContextError>(b"$EndMeshFormat\n")
-            .parse_next(&mut self.input)
-            .map_err(|e| anyhow!("failed for parse mshfile header: {}", e))?;
+        self.literal(b"$EndMeshFormat\n")?;
 
         if format == MshDataFormat::Binary {
             let marker: &'a [u8] = take::<_, _, ContextError>(4usize)
@@ -151,7 +147,29 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
         })
     }
 
-    fn parse_physical_names(&mut self) {
+    /// Parses the $PhysicalNames block
+    fn parse_physical_names(&mut self) -> Result<PhysicalNames<I>> {
+        self.literal(b"$PhysicalNames")?;
+
+        let n_physical_names = digit1::<_, ContextError>
+            .parse_to::<I>()
+            .parse_next(&mut self.input)
+            .map_err(|e| anyhow!("failed to parse numPhysicalNames: {e}"))
+            .map(|val| val.to_usize().unwrap())?;
+        
+        self.line_ending()?;
+        
+        let mut names = Vec::with_capacity(n_physical_names);
+        
+        for _ in 0..n_physical_names {
+            let (dimension, tag, name) = (
+                digit1::<_, ContextError>
+                    .parse_to::<I>()
+                    .map_err(|e| anyhow!("failed to parse dimension: {e}"))
+
+            ).parse_next(&mut self.input)?;
+        }
+
         todo!()
     }
 
@@ -160,6 +178,13 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
         line_ending::<_, ContextError>
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("expected line end: {e}"))
+    }
+
+    /// Consume a literal
+    fn literal(&mut self, expected: &[u8]) -> Result<&'a [u8]> {
+        literal::<_, _, ContextError>(expected)
+            .parse_next(&mut self.input)
+            .map_err(|e| anyhow!("failed to parse literal: {e}"))
     }
 
     /// Consumes whitespace
