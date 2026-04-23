@@ -20,7 +20,22 @@ pub trait MshIntType:
 
 /// Trait for msh file float types
 pub trait MshFloatType:
-    Float + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString
+    Float + Clone + Copy + ToPrimitive + FromPrimitive + FromStr + ToString
+{
+}
+
+impl<T: Unsigned + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString>
+    MshUsizeType for T
+{
+}
+
+impl<T: Signed + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString>
+    MshIntType for T
+{
+}
+
+impl<T: Float + Clone + Copy + ToPrimitive + FromPrimitive + FromStr + ToString> MshFloatType
+    for T
 {
 }
 
@@ -40,8 +55,6 @@ pub struct MshHeader {
     pub version: String,
     pub format: MshDataFormat,
     pub data_size: usize,
-    pub int_size: usize,
-    pub float_size: usize,
     pub endianness: Option<Endianness>,
 }
 

@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 
-use anyhow::{Ok, Result, anyhow, bail};
+use anyhow::{Ok, Result, Error, anyhow, bail};
 use winnow::{
     Parser,
-    ascii::{digit1, float, line_ending, space1},
+    ascii::{digit1, float, line_ending, multispace0, space1},
     binary::Endianness,
-    combinator::{opt, preceded},
+    combinator::preceded,
     error::ContextError,
-    token::{literal, take},
+    token::{literal, take, take_until},
 };
 
 use crate::gmsh::mshfile::{MshDataFormat, MshFile, MshHeader};
@@ -32,29 +32,81 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
     }
 
     pub fn parse_bytes(&mut self) -> Result<MshFile<U, I, F>> {
-        let header = self.parse_header().map_err(|e| anyhow!("{:?}", e))?;
+        let header = self.parse_header()?;
 
         loop {
+            self.whitespace()?;
+
             if self.input.is_empty() {
                 break;
+            }
+
+            let (_, tag_bytes) = take_until::<_, &'a [u8], ContextError>(0.., b"\n".as_slice())
+                .parse_peek(&mut self.input)
+                .map_err(|e| anyhow!("failed to peek block tag: {e}"))?;
+
+            let tag = std::str::from_utf8(tag_bytes).unwrap_or("");
+
+            match tag {
+                "$PhysicalNames" => {
+
+                }, 
+                "$Entities" => {
+                    todo!()
+                }, 
+                "$PartitionedEntities" => {
+                    todo!()
+                }, 
+                "$Nodes" => {
+                    todo!()
+                }, 
+                "$Elements" => {
+                    todo!()
+                }, 
+                "$Periodic" => {
+                    todo!()
+                }, 
+                "$GhostElements" => {
+                    todo!()
+                }, 
+                "$Parametrizations" => {
+                    todo!()
+                }, 
+                "$NodeData" => {
+                    todo!()
+                }, 
+                "$ElementData" => {
+                    todo!()
+                }, 
+                "$ElementNodeData" => {
+                    todo!()
+                }, 
+                "$InterpolationScheme" => {
+                    todo!()
+                }
+                _ => {
+                    unimplemented!("unrecognised block: {}", tag)
+                }
             }
         }
 
         todo!()
     }
 
-    pub fn parse_header(&mut self) -> Result<MshHeader> {
+    fn parse_header(&mut self) -> Result<MshHeader> {
         literal::<_, _, ContextError>(b"$MeshFormat\n")
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("failed for parse mshfile header: {}", e))?;
 
         let (version, format, data_size) = (
-            float::<_, F, ContextError>,
+            float::<_, F, ContextError>
+                .verify(|&version| version == F::from(4.1).unwrap())
+                .map(|version| version.to_string()),
             preceded(
                 space1,
                 digit1
                     .parse_to::<i32>()
-                    .verify(|&val| val == 1 || val == 2)
+                    .verify(|&val| val == 0 || val == 1)
                     .map(|val| {
                         if val == 0 {
                             MshDataFormat::Ascii
@@ -69,6 +121,9 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
             .map_err(|e| anyhow!("failed to parse mshfile header: {e}"))?;
 
         self.line_ending()?;
+        literal::<_, _, ContextError>(b"$EndMeshFormat\n")
+            .parse_next(&mut self.input)
+            .map_err(|e| anyhow!("failed for parse mshfile header: {}", e))?;
 
         if format == MshDataFormat::Binary {
             let marker: &'a [u8] = take::<_, _, ContextError>(4usize)
@@ -80,8 +135,8 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
                     .try_into()
                     .map_err(|_| anyhow!("corrupt endianness marker"))?,
             ) {
-                0 => Some(Endianness::Big),
-                1 => Some(Endianness::Little),
+                0x01_00_00_00 => Some(Endianness::Big),
+                0x00_00_00_01 => Some(Endianness::Little),
                 _ => bail!("corrupt endianness marker"),
             }
         }
@@ -89,18 +144,83 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
         self.format = Some(format);
 
         Ok(MshHeader {
-            version: version.to_string(),
+            version,
             format,
             data_size: data_size.to_usize().unwrap_or(8),
-            int_size: (),
-            float_size: (),
-            endianness: (),
+            endianness: self.endianness,
         })
     }
 
+    fn parse_physical_names(&mut self) {
+        todo!()
+    }
+
+    /// Consumes newlines
     fn line_ending(&mut self) -> Result<&'a [u8]> {
         line_ending::<_, ContextError>
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("expected line end: {e}"))
+    }
+
+    /// Consumes whitespace
+    fn whitespace(&mut self) -> Result<&'a [u8]> {
+        multispace0::<_, ContextError>
+            .parse_next(&mut self.input)
+            .map_err(|e| anyhow!("failed to parse whitespace: {e}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_header_ascii() {
+        let input = b"$MeshFormat\n4.1 0 8\n";
+        let mut parser = MshParser::<usize, i32, f64>::new(input);
+        let header = parser.parse_header().unwrap();
+
+        assert_eq!(header.version, "4.1");
+        assert_eq!(header.format, MshDataFormat::Ascii);
+        assert_eq!(header.data_size, 8);
+        assert_eq!(header.endianness, None);
+    }
+
+    #[test]
+    fn test_parse_header_binary_little_endian() {
+        let input = b"$MeshFormat\n4.1 1 8\n\x01\x00\x00\x00";
+        let mut parser = MshParser::<usize, i32, f64>::new(input);
+        let header = parser.parse_header().unwrap();
+
+        assert_eq!(header.version, "4.1");
+        assert_eq!(header.format, MshDataFormat::Binary);
+        assert_eq!(header.data_size, 8);
+        assert_eq!(header.endianness, Some(Endianness::Little));
+    }
+
+    #[test]
+    fn test_parse_header_binary_big_endian() {
+        let input = b"$MeshFormat\n4.1 1 8\n\x00\x00\x00\x01";
+        let mut parser = MshParser::<usize, i32, f64>::new(input);
+        let header = parser.parse_header().unwrap();
+
+        assert_eq!(header.version, "4.1");
+        assert_eq!(header.format, MshDataFormat::Binary);
+        assert_eq!(header.data_size, 8);
+        assert_eq!(header.endianness, Some(Endianness::Big));
+    }
+
+    #[test]
+    fn test_parse_header_invalid_version() {
+        let input = b"$MeshFormat\n4.2 0 8\n";
+        let mut parser = MshParser::<usize, i32, f64>::new(input);
+        assert!(parser.parse_header().is_err());
+    }
+
+    #[test]
+    fn test_parse_header_invalid_format() {
+        let input = b"$MeshFormat\n4.1 3 8\n";
+        let mut parser = MshParser::<usize, i32, f64>::new(input);
+        assert!(parser.parse_header().is_err());
     }
 }
