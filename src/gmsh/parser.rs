@@ -119,25 +119,25 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
             .map_err(|e| anyhow!("failed to parse mshfile header: {e}"))?;
 
         self.line_ending()?;
-        self.literal(b"$EndMeshFormat\n")?;
-
+        
         if format == MshDataFormat::Binary {
             let marker: &'a [u8] = take::<_, _, ContextError>(4usize)
                 .parse_next(&mut self.input)
                 .map_err(|e| anyhow!("failed to parse endianness marker: {e}"))?;
-
+            
             self.endianness = match u32::from_le_bytes(
                 marker
-                    .try_into()
-                    .map_err(|_| anyhow!("corrupt endianness marker"))?,
+                .try_into()
+                .map_err(|_| anyhow!("corrupt endianness marker"))?,
             ) {
                 0x01_00_00_00 => Some(Endianness::Big),
                 0x00_00_00_01 => Some(Endianness::Little),
                 _ => bail!("corrupt endianness marker"),
             }
         }
-
+        
         self.format = Some(format);
+        self.literal(b"$EndMeshFormat\n")?;
 
         Ok(MshHeader {
             version,
