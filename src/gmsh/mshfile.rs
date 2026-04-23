@@ -45,6 +45,12 @@ pub enum MshDataFormat {
     Binary,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DataSize {
+    U32,
+    U64,
+}
+
 pub struct MshFile<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub header: MshHeader,
     pub data: MshData<U, I, F>,
@@ -54,12 +60,12 @@ pub struct MshFile<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
 pub struct MshHeader {
     pub version: String,
     pub format: MshDataFormat,
-    pub data_size: usize,
+    pub data_size: DataSize,
     pub endianness: Option<Endianness>,
 }
 
 pub struct MshData<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
-    pub physical_names: Option<PhysicalNames<I>>, 
+    pub physical_names: Option<PhysicalNames<I>>,
     pub entities: Option<Entities<I, F>>,
     pub nodes: Option<Nodes<U, I, F>>,
     pub elements: Option<Elements<U, I>>,
@@ -67,15 +73,15 @@ pub struct MshData<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PhysicalNames<I: MshIntType> {
-    num_physical_names: I, 
-    names: Vec<PhysicalName<I>>, 
+    pub n_physical_names: I,
+    pub names: Vec<PhysicalName<I>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PhysicalName<I: MshIntType> {
-    pub dimension: I, 
-    pub tag: I, 
-    pub name: String, 
+    pub dimension: I,
+    pub tag: I,
+    pub name: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
