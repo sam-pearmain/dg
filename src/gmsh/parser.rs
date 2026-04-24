@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use anyhow::{Error, Ok, Result, anyhow, bail};
 use winnow::{
     Parser,
-    ascii::{digit1, float, line_ending, multispace0, space1},
+    ascii::{dec_int, digit1, float, line_ending, multispace0, space1},
     binary::{Endianness, be_u32, be_u64, le_u32, le_u64},
     combinator::{alt, delimited, preceded},
-    error::ContextError,
+    error::{AddContext, ContextError, ErrMode, ParseError, ParserError, StrContext},
     token::{literal, take, take_until},
 };
 
@@ -47,7 +47,7 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
         };
 
         loop {
-            self.whitespace()?;
+            self.consume_whitespace()?;
 
             if self.input.is_empty() {
                 break;
@@ -108,8 +108,8 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
     }
 
     fn parse_header(&mut self) -> Result<MshHeader> {
-        self.literal(b"$MeshFormat")?;
-        self.line_ending()?;
+        self.consume_literal(b"$MeshFormat")?;
+        self.consume_line_ending()?;
 
         let (version, format, data_size) = (
             float::<_, F, ContextError>
@@ -130,7 +130,7 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("failed to parse mshfile header: {e}"))?;
 
-        self.line_ending()?;
+        self.consume_line_ending()?;
 
         if format == MshDataFormat::Binary {
             self.endianness = Some(
@@ -142,12 +142,12 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
                 .map_err(|e| anyhow!("corrupt or missing endianness marker: {e}"))?,
             );
 
-            self.line_ending()?;
+            self.consume_line_ending()?;
         }
 
         self.format = Some(format);
-        self.literal(b"$EndMeshFormat")?;
-        self.line_ending()?;
+        self.consume_literal(b"$EndMeshFormat")?;
+        self.consume_line_ending()?;
 
         Ok(MshHeader {
             version,
@@ -159,15 +159,15 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
 
     /// Parses the $PhysicalNames block
     fn parse_physical_names(&mut self) -> Result<PhysicalNames<I>> {
-        self.literal(b"$PhysicalNames")?;
-        self.line_ending()?;
+        self.consume_literal(b"$PhysicalNames")?;
+        self.consume_line_ending()?;
 
         let n_physical_names = digit1::<_, ContextError>
             .parse_to::<I>()
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("failed to parse numPhysicalNames: {e}"))?;
 
-        self.line_ending()?;
+        self.consume_line_ending()?;
 
         let mut names = Vec::with_capacity(n_physical_names.to_usize().unwrap());
 
@@ -194,11 +194,11 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
                 tag,
                 name,
             });
-            self.line_ending()?;
+            self.consume_line_ending()?;
         }
 
-        self.literal(b"$EndPhysicalNames")?;
-        self.line_ending()?;
+        self.consume_literal(b"$EndPhysicalNames")?;
+        self.consume_line_ending()?;
 
         Ok(PhysicalNames {
             n_physical_names,
@@ -208,79 +208,102 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
 
     /// Parses the $Entities block
     fn parse_entities(&mut self) -> Result<Entities<I, F>> {
-        self.literal(b"$Entities")?;
-        self.line_ending()?;
+        self.consume_literal(b"$Entities")?;
+        self.consume_line_ending()?;
 
-        (n_points, n_curves, n_surfaces, n_volumes) = (
-            self.size_t(), 
+        let (n_points, n_curves, n_surfaces, n_volumes) = (
             
         )
+            .parse_next(&mut self.input)
+            .map_err(|e| anyhow!("erm: {e}"))?;
 
         todo!()
     }
 
-    /// Parses a size_t type
-    fn size_t(&mut self) -> Result<U> {
-        match self.format.unwrap() {
-            MshDataFormat::Ascii => digit1::<_, ContextError>
-                .parse_to::<U>()
-                .parse_next(&mut self.input)
-                .map_err(|e| anyhow!("failed to parse ascii size_t: {e}")),
-            MshDataFormat::Binary => match self.data_size.unwrap() {
-                DataSize::U32 => match self.endianness.unwrap() {
-                    Endianness::Big => be_u32::<_, ContextError>
-                        .parse_next(&mut self.input)
-                        .map_err(|e| anyhow!("failed to parse be_u32: {e}"))
-                        .and_then(|val| {
-                            U::from_u32(val)
-                                .ok_or_else(|| anyhow!("failed to convert u32 to generic type"))
-                        }),
-                    Endianness::Little => le_u32::<_, ContextError>
-                        .parse_next(&mut self.input)
-                        .map_err(|e| anyhow!("failed to parse le_u32: {e}"))
-                        .and_then(|val| {
-                            U::from_u32(val)
-                                .ok_or_else(|| anyhow!("failed to convert u32 to generic type"))
-                        }),
-                    _ => bail!("this should not happen"),
-                },
-                DataSize::U64 => match self.endianness.unwrap() {
-                    Endianness::Big => be_u64::<_, ContextError>
-                        .parse_next(&mut self.input)
-                        .map_err(|e| anyhow!("failed to parse be_u64: {e}"))
-                        .and_then(|val| {
-                            U::from_u64(val)
-                                .ok_or_else(|| anyhow!("failed to convert u64 to generic type"))
-                        }),
-                    Endianness::Little => le_u64::<_, ContextError>
-                        .parse_next(&mut self.input)
-                        .map_err(|e| anyhow!("failed to parse le_u64: {e}"))
-                        .and_then(|val| {
-                            U::from_u64(val)
-                                .ok_or_else(|| anyhow!("failed to convert u64 to generic type"))
-                        }),
-                    _ => bail!("this should not happen"),
-                },
-            },
+    fn parse_size_t(&self) -> impl Parser<&'a [u8], U, ContextError> {
+        let format = self.format.unwrap();
+        let endianness = self.endianness.unwrap();
+        let data_size = self.data_size.unwrap();
+
+        move |input: &mut &'a [u8]| match format {
+            MshDataFormat::Ascii => preceded(multispace0, digit1.parse_to::<U>()).parse_next(input), 
+            MshDataFormat::Binary => match (endianness, data_size) {
+                (Endianness::Little, DataSize::U32) => le_u32.map(|val| U::from_u32(val).unwrap()).parse_next(input), 
+                (Endianness::Little, DataSize::U64) => le_u64.map(|val| U::from_u64(val).unwrap()).parse_next(input), 
+                (Endianness::Big, DataSize::U32) => be_u32.map(|val| U::from_u32(val).unwrap()).parse_next(input),
+                (Endianness::Big, DataSize::U64) => be_u64.map(|val| U::from_u64(val).unwrap()).parse_next(input),
+                _ => unreachable!()
+            }
         }
     }
 
+    fn parse_int_t(&self) -> impl Parser<&'a [u8], I, ContextError> {
+        let format = self.format.unwrap();
+        let endianness = self.endianness.unwrap();
+
+        move |input: &mut &'a [u8]| match format {
+            MshDataFormat::Ascii => {
+                preceded(multispace0, dec_int.parse_to::<I>()).parse_next(input)
+            }
+            MshDataFormat::Binary => match endianness {
+                Endianness::Little => le_i32.map(|val| I::from_i32(val).unwrap()).parse_next(input),
+                Endianness::Big => be_i32.map(|val| I::from_i32(val).unwrap()).parse_next(input),
+            },
+    }
+    }
+
+    fn parse_float_t(&self) -> impl Parser<&'a [u8], F, ContextError> {
+
+    }
+
+    fn is_ascii(&self) -> Result<bool> {
+        if let Some(format) = self.format {
+            return Ok(format == MshDataFormat::Ascii)
+        } else {
+            bail!("data format uninitialised")
+        }
+    }
+
+    fn is_binary(&self) -> Result<bool> {
+        if let Some(format) = self.format {
+            return Ok(format == MshDataFormat::Binary)
+        } else {
+            bail!("data format uninitialised")
+        }
+    }
+
+    fn is_binary_le(&self) -> Result<bool> {
+        if let Some(endianness) = self.endianness {
+            return Ok(endianness == Endianness::Little)
+        } else {
+            bail!("data format uninitialised")
+        }
+    }
+
+    fn is_binary_be(&self) -> Result<bool> {
+        if let Some(endianness) = self.endianness {
+            return Ok(endianness == Endianness::Big)
+        } else {
+            bail!("data format uninitialised")
+        }
+    } 
+
     /// Consumes newlines
-    fn line_ending(&mut self) -> Result<&'a [u8]> {
+    fn consume_line_ending(&mut self) -> Result<&'a [u8]> {
         line_ending::<_, ContextError>
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("expected line end: {e}"))
     }
 
     /// Consume a literal
-    fn literal(&mut self, expected: &[u8]) -> Result<&'a [u8]> {
+    fn consume_literal(&mut self, expected: &[u8]) -> Result<&'a [u8]> {
         literal::<_, _, ContextError>(expected)
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("failed to parse literal: {e}"))
     }
 
     /// Consumes whitespace
-    fn whitespace(&mut self) -> Result<&'a [u8]> {
+    fn consume_whitespace(&mut self) -> Result<&'a [u8]> {
         multispace0::<_, ContextError>
             .parse_next(&mut self.input)
             .map_err(|e| anyhow!("failed to parse whitespace: {e}"))
