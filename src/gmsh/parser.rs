@@ -211,6 +211,11 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
         self.literal(b"$Entities")?;
         self.line_ending()?;
 
+        (n_points, n_curves, n_surfaces, n_volumes) = (
+            self.size_t(), 
+            
+        )
+
         todo!()
     }
 
