@@ -5,7 +5,7 @@ use winnow::{
     Parser,
     ascii::{digit1, float, line_ending, multispace0, space1},
     binary::{Endianness, be_u32, be_u64, le_u32, le_u64},
-    combinator::{delimited, preceded},
+    combinator::{alt, delimited, preceded},
     error::ContextError,
     token::{literal, take, take_until},
 };
@@ -117,30 +117,14 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
                 .map(|version| version.to_string()),
             preceded(
                 space1,
-                digit1
-                    .parse_to::<i32>()
-                    .verify(|&val| val == 0 || val == 1)
-                    .map(|val| {
-                        if val == 0 {
-                            MshDataFormat::Ascii
-                        } else {
-                            MshDataFormat::Binary
-                        }
-                    }),
+                alt((
+                    "0".value(MshDataFormat::Ascii),
+                    "1".value(MshDataFormat::Binary),
+                )),
             ),
             preceded(
                 space1,
-                digit1
-                    .parse_to::<usize>()
-                    .verify(|&val| val == 4usize || val == 8usize)
-                    .map(|val| {
-                        if val == 4 {
-                            DataSize::U32
-                        } else {
-                            // we can be confident here since we have already checked if val == 4 or val == 8
-                            DataSize::U64
-                        }
-                    }),
+                alt(("4".value(DataSize::U32), "8".value(DataSize::U64))),
             ),
         )
             .parse_next(&mut self.input)
@@ -149,15 +133,14 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<'a, U, I, F>
         self.line_ending()?;
 
         if format == MshDataFormat::Binary {
-            let marker: &'a [u8] = take::<_, _, ContextError>(4usize)
+            self.endianness = Some(
+                alt::<_, _, ContextError, _>((
+                    [0x01, 0x00, 0x00, 0x00].value(Endianness::Little),
+                    [0x00, 0x00, 0x00, 0x01].value(Endianness::Big),
+                ))
                 .parse_next(&mut self.input)
-                .map_err(|e| anyhow!("failed to parse endianness marker: {e}"))?;
-
-            self.endianness = match marker {
-                [0x01, 0x00, 0x00, 0x00] => Some(Endianness::Little),
-                [0x00, 0x00, 0x00, 0x01] => Some(Endianness::Big),
-                _ => bail!("corrupt endianness marker"),
-            };
+                .map_err(|e| anyhow!("corrupt or missing endianness marker: {e}"))?,
+            );
 
             self.line_ending()?;
         }
