@@ -64,6 +64,7 @@ pub struct MshHeader {
     pub endianness: Option<Endianness>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct MshData<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub physical_names: Option<PhysicalNames<I>>,
     pub entities: Option<Entities<I, F>>,
