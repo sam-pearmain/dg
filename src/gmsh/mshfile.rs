@@ -8,34 +8,76 @@ use winnow::binary::Endianness;
 
 /// Trait for msh file usize_t types
 pub trait MshUsizeType:
-    Unsigned + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString
+    Unsigned
+    + Integer
+    + Clone
+    + Copy
+    + Default
+    + Hash
+    + ToPrimitive
+    + FromPrimitive
+    + FromStr
+    + ToString
+    + winnow::ascii::Uint
 {
 }
 
 /// Trait for msh file int types
 pub trait MshIntType:
-    Signed + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString
+    Signed
+    + Integer
+    + Clone
+    + Copy
+    + Default
+    + Hash
+    + ToPrimitive
+    + FromPrimitive
+    + FromStr
+    + ToString
+    + winnow::ascii::Int
 {
 }
 
 /// Trait for msh file float types
 pub trait MshFloatType:
-    Float + Clone + Copy + ToPrimitive + FromPrimitive + FromStr + ToString
+    Float + Clone + Copy + Default + ToPrimitive + FromPrimitive + FromStr + ToString
 {
 }
 
-impl<T: Unsigned + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString>
-    MshUsizeType for T
+impl<
+    T: Unsigned
+        + Integer
+        + Clone
+        + Copy
+        + Default
+        + Hash
+        + ToPrimitive
+        + FromPrimitive
+        + FromStr
+        + ToString
+        + winnow::ascii::Uint,
+> MshUsizeType for T
 {
 }
 
-impl<T: Signed + Integer + Clone + Copy + Hash + ToPrimitive + FromPrimitive + FromStr + ToString>
-    MshIntType for T
+impl<
+    T: Signed
+        + Integer
+        + Clone
+        + Copy
+        + Hash
+        + Default
+        + ToPrimitive
+        + FromPrimitive
+        + FromStr
+        + ToString
+        + winnow::ascii::Int,
+> MshIntType for T
 {
 }
 
-impl<T: Float + Clone + Copy + ToPrimitive + FromPrimitive + FromStr + ToString> MshFloatType
-    for T
+impl<T: Float + Clone + Copy + Default + ToPrimitive + FromPrimitive + FromStr + ToString>
+    MshFloatType for T
 {
 }
 
@@ -46,7 +88,7 @@ pub enum MshDataFormat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DataSize {
+pub enum SizeTypeSize {
     U32,
     U64,
 }
@@ -60,11 +102,11 @@ pub struct MshFile<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
 pub struct MshHeader {
     pub version: String,
     pub format: MshDataFormat,
-    pub data_size: DataSize,
+    pub size_t_size: SizeTypeSize,
     pub endianness: Option<Endianness>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct MshData<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub physical_names: Option<PhysicalNames<I>>,
     pub entities: Option<Entities<I, F>>,
