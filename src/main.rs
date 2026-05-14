@@ -1,6 +1,6 @@
 use std::fs;
 
-use dg::gmsh::{mshfile::Msh, parsers::MshParser};
+use dg::gmsh::mshfile::Msh;
 
 fn main() {
     let bytes = fs::read("meshes/cube-ascii.msh").expect("what");

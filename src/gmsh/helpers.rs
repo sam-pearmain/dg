@@ -150,3 +150,85 @@ where
         Ok(Element { tag, nodes })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use winnow::{Parser, Stateful};
+
+    use crate::gmsh::parsers::MshParserState;
+
+    fn create_ascii_stream(data: &[u8]) -> MshStream<'_> {
+        let state = MshParserState {
+            format: Some(MshDataFormat::Ascii),
+            endianness: None,
+            size_t_size: None,
+        };
+        Stateful { input: data, state }
+    }
+
+    fn create_binary_le_stream(data: &[u8]) -> MshStream<'_> {
+        let state = MshParserState {
+            format: Some(MshDataFormat::Binary),
+            endianness: Some(Endianness::Little),
+            size_t_size: Some(SizeTypeSize::U32),
+        };
+        Stateful { input: data, state }
+    }
+
+    #[test]
+    fn test_size_t_ascii() {
+        let mut stream = create_ascii_stream(b" 101 ");
+        let result: usize = size_t::<usize>.parse_next(&mut stream).unwrap();
+        assert_eq!(result, 101);
+    }
+
+    #[test]
+    fn test_int_binary_le() {
+        let data = [0x2A, 0x00, 0x00, 0x00];
+        let mut stream = create_binary_le_stream(&data);
+        let result: i32 = int::<i32>.parse_next(&mut stream).unwrap();
+        assert_eq!(result, 42);
+    }
+
+    #[test]
+    fn test_float_ascii() {
+        let mut stream = create_ascii_stream(b" \n3.14159 ");
+        let result: f64 = float::<f64>.parse_next(&mut stream).unwrap();
+        assert_eq!(result, 3.14159);
+    }
+
+    #[test]
+    fn test_node_block_ascii() {
+        let data = b"2 1 0 2\n1\n2\n0.0 0.0 0.0\n1.0 0.0 0.0";
+        let mut stream = create_ascii_stream(data);
+
+        let block: NodeBlock<usize, i32, f64> = node_block::<usize, i32, f64>
+            .parse_next(&mut stream)
+            .unwrap();
+
+        assert_eq!(block.dim, 2);
+        assert_eq!(block.tag, 1);
+        assert_eq!(block.nodes.len(), 2);
+        assert_eq!(block.nodes[0].tag, 1);
+        assert_eq!(block.nodes[0].x, 0.0);
+        assert_eq!(block.nodes[1].tag, 2);
+        assert_eq!(block.nodes[1].x, 1.0);
+    }
+
+    #[test]
+    fn test_element_block_ascii() {
+        let data = b"2 1 2 1\n10 1 2 3";
+        let mut stream = create_ascii_stream(data);
+
+        let block: ElementBlock<usize, i32> =
+            element_block::<usize, i32>.parse_next(&mut stream).unwrap();
+
+        assert_eq!(block.dim, 2);
+        assert_eq!(block.tag, 1);
+        assert_eq!(block.element_type, GmshElementType::Tri3);
+        assert_eq!(block.elements.len(), 1);
+        assert_eq!(block.elements[0].tag, 10);
+        assert_eq!(block.elements[0].nodes, vec![1, 2, 3]);
+    }
+}

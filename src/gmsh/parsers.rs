@@ -5,7 +5,7 @@ use winnow::{
     Parser, Stateful,
     ascii::{dec_int, multispace0, space1},
     binary::Endianness,
-    combinator::{alt, delimited, preceded, repeat, terminated},
+    combinator::{alt, delimited, preceded, repeat},
     error::ContextError,
     token::{literal, take_while},
 };
@@ -25,48 +25,6 @@ pub struct MshParserState {
     pub format: Option<MshDataFormat>,
     pub endianness: Option<Endianness>,
     pub size_t_size: Option<SizeTypeSize>,
-}
-
-impl MshParserState {
-    fn is_ascii(&self) -> Option<bool> {
-        if let Some(format) = self.format {
-            Some(format == MshDataFormat::Ascii)
-        } else {
-            None
-        }
-    }
-
-    fn is_binary(&self) -> Option<bool> {
-        if let Some(format) = self.format {
-            Some(format == MshDataFormat::Binary)
-        } else {
-            None
-        }
-    }
-
-    fn is_binary_le(&self) -> Option<bool> {
-        if let Some(is_binary) = self.is_binary() {
-            if let Some(endianness) = self.endianness {
-                Some(is_binary && endianness == Endianness::Little)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    fn is_binary_be(&self) -> Option<bool> {
-        if let Some(is_binary) = self.is_binary() {
-            if let Some(endianness) = self.endianness {
-                Some(is_binary && endianness == Endianness::Big)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
 }
 
 pub type MshStream<'a> = Stateful<&'a [u8], MshParserState>;
@@ -194,7 +152,8 @@ fn parse_header<'a>(stream: &mut MshStream<'a>) -> Result<MshHeader> {
     // read the extra binary int to determine endianness
     if format == MshDataFormat::Binary {
         endianness = Some(
-            terminated(
+            delimited(
+                multispace0,
                 alt::<_, _, ContextError, _>((
                     [0x01, 0x00, 0x00, 0x00].value(Endianness::Little),
                     [0x00, 0x00, 0x00, 0x01].value(Endianness::Big),
@@ -415,6 +374,11 @@ where
     .parse_next(stream)
     .map_err(|e| anyhow!("failed to parse node blocks: {e}"))?;
 
+    // exit the block
+    (multispace0, literal("$EndNodes"), multispace0)
+        .parse_next(stream)
+        .map_err(|e: ContextError| anyhow!("failed to exit block: {e}"))?;
+
     Ok(Nodes {
         n_nodes,
         min_node_tag,
@@ -441,10 +405,138 @@ where
     .parse_next(stream)
     .map_err(|e| anyhow!("failed to parse element blocks: {e}"))?;
 
+    // exit the block
+    (multispace0, literal("$EndElements"), multispace0)
+        .parse_next(stream)
+        .map_err(|e: ContextError| anyhow!("failed to exit block: {e}"))?;
+
     Ok(Elements {
         n_elements,
         min_element_tag,
         max_element_tag,
         element_blocks,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use winnow::Stateful;
+
+    // Helper to create an ASCII stream with preset state for isolated block testing
+    fn create_ascii_stream(data: &[u8]) -> MshStream<'_> {
+        let state = MshParserState {
+            format: Some(MshDataFormat::Ascii),
+            endianness: None,
+            size_t_size: Some(SizeTypeSize::U64),
+        };
+        Stateful { input: data, state }
+    }
+
+    #[test]
+    fn test_parse_header_ascii() {
+        let data = b"$MshFormat\n4.1 0 8\n$EndMeshFormat\n";
+        let mut stream = Stateful {
+            input: data.as_ref(),
+            state: MshParserState::default(),
+        };
+
+        let header = parse_header(&mut stream).unwrap();
+
+        assert_eq!(header.version, "4.1");
+        assert_eq!(header.format, MshDataFormat::Ascii);
+        assert_eq!(header.size_t_size, SizeTypeSize::U64);
+        assert_eq!(header.endianness, None);
+
+        // Ensure state was correctly updated in the stream
+        assert_eq!(stream.state.format, Some(MshDataFormat::Ascii));
+    }
+
+    #[test]
+    fn test_parse_header_binary_le() {
+        // "4.1 1 8" followed by the integer 1 in 4 bytes (Little Endian)
+        let data = b"$MshFormat\n4.1 1 8\n\x01\x00\x00\x00\n$EndMeshFormat\n";
+        let mut stream = Stateful {
+            input: data.as_ref(),
+            state: MshParserState::default(),
+        };
+
+        let header = parse_header(&mut stream).unwrap();
+
+        assert_eq!(header.format, MshDataFormat::Binary);
+        assert_eq!(header.endianness, Some(Endianness::Little));
+    }
+
+    #[test]
+    fn test_parse_physical_names() {
+        let data = b"2\n1 10 \"Inlet\"\n2 20 \"Wall\"\n$EndPhysicalNames\n";
+        let mut stream = create_ascii_stream(data);
+
+        let physical_names = parse_physical_names::<i32>(&mut stream).unwrap();
+
+        assert_eq!(physical_names.n_physical_names, 2);
+        assert_eq!(physical_names.names.len(), 2);
+
+        assert_eq!(physical_names.names[0].dimension, 1);
+        assert_eq!(physical_names.names[0].tag, 10);
+        assert_eq!(physical_names.names[0].name, "Inlet");
+
+        assert_eq!(physical_names.names[1].dimension, 2);
+        assert_eq!(physical_names.names[1].tag, 20);
+        assert_eq!(physical_names.names[1].name, "Wall");
+    }
+
+    #[test]
+    fn test_parse_entities() {
+        // 1 point, 1 curve, 0 surfaces, 0 volumes
+        // Point: tag 1, coords (0.1, 0.2, 0.3), 1 physical tag (100)
+        // Curve: tag 2, min (0,0,0), max (1,1,1), 0 physical tags, 0 bounding points
+        let data = b"1 1 0 0\n1 0.1 0.2 0.3 1 100\n2 0.0 0.0 0.0 1.0 1.0 1.0 0 0\n$EndEntities\n";
+        let mut stream = create_ascii_stream(data);
+
+        let entities = parse_entities::<usize, i32, f64>(&mut stream).unwrap();
+
+        assert_eq!(entities.points.len(), 1);
+        assert_eq!(entities.points[0].tag, 1);
+        assert_eq!(entities.points[0].x, 0.1);
+        assert_eq!(entities.points[0].physical_tags, vec![100]);
+
+        assert_eq!(entities.curves.len(), 1);
+        assert_eq!(entities.curves[0].tag, 2);
+        assert_eq!(entities.curves[0].max_x, 1.0);
+        assert!(entities.curves[0].physical_tags.is_empty());
+    }
+
+    #[test]
+    fn test_parse_nodes() {
+        // Header: 1 entity block, 2 nodes total, min tag 1, max tag 2
+        // Block 1: entity dim 0, entity tag 1, parametric 0, 2 nodes in block
+        // Tags: 1, 2
+        // Coords: (0,0,0), (1,0,0)
+        let data = b"1 2 1 2\n0 1 0 2\n1\n2\n0.0 0.0 0.0\n1 0 0\n$EndNodes\n";
+        let mut stream = create_ascii_stream(data);
+
+        let nodes = parse_nodes::<usize, i32, f64>(&mut stream).unwrap();
+
+        assert_eq!(nodes.n_nodes, 2);
+        assert_eq!(nodes.node_blocks.len(), 1);
+        assert_eq!(nodes.node_blocks[0].dim, 0);
+        assert_eq!(nodes.node_blocks[0].nodes.len(), 2);
+        assert_eq!(nodes.node_blocks[0].nodes[1].tag, 2);
+        assert_eq!(nodes.node_blocks[0].nodes[1].x, 1.0);
+    }
+
+    #[test]
+    fn test_parse_elements() {
+        let data = b"1 1 10 10\n2 1 2 1\n10 1 2 3\n$EndElements\n";
+        let mut stream = create_ascii_stream(data);
+
+        let elements = parse_elements::<usize, i32>(&mut stream).unwrap();
+
+        assert_eq!(elements.n_elements, 1);
+        assert_eq!(elements.element_blocks.len(), 1);
+        assert_eq!(elements.element_blocks[0].elements.len(), 1);
+        assert_eq!(elements.element_blocks[0].elements[0].tag, 10);
+        assert_eq!(elements.element_blocks[0].elements[0].nodes, vec![1, 2, 3]);
+    }
 }
