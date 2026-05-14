@@ -1,7 +1,6 @@
-use std::{collections::HashMap, hash::Hash, str::FromStr};
+use std::{hash::Hash, str::FromStr};
 
 use anyhow::{Ok, Result, bail};
-use ndarray::{Array1, Array2};
 use num::{Float, FromPrimitive, Integer, Signed};
 use num_derive::FromPrimitive;
 use num_traits::{ToPrimitive, Unsigned};
@@ -102,10 +101,10 @@ pub struct Msh<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
 }
 
 impl<'a, U, I, F> TryFrom<&'a [u8]> for Msh<U, I, F>
-where 
-    U: MshUsizeType, 
-    I: MshIntType, 
-    F: MshFloatType
+where
+    U: MshUsizeType,
+    I: MshIntType,
+    F: MshFloatType,
 {
     type Error = anyhow::Error;
 

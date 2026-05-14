@@ -13,8 +13,8 @@ use winnow::{
 use crate::gmsh::{
     helpers::{element_block, float, int, node_block, size_t, tags},
     mshfile::{
-        Curve, ElementBlock, Elements, Entities, MshData, MshDataFormat, Msh, MshHeader,
-        NodeBlock, Nodes, PhysicalName, PhysicalNames, Point, SizeTypeSize, Surface, Volume,
+        Curve, ElementBlock, Elements, Entities, Msh, MshData, MshDataFormat, MshHeader, NodeBlock,
+        Nodes, PhysicalName, PhysicalNames, Point, SizeTypeSize, Surface, Volume,
     },
 };
 
