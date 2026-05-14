@@ -397,7 +397,7 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
                 )
                 .parse_next(stream)
             }
-        ).parse_next(stream);
+        ).parse_next(stream)
         
 
 
