@@ -337,18 +337,32 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
         .parse_next(stream)
         .map_err(|e| anyhow!("failed to parse curves: {e}"))?;
 
-        #[rustfmt::skip]
+        // parse the volumes
         let volumes: Vec<Volume<I, F>> = repeat(
             n_volumes.to_usize().unwrap_or_default(),
             (
-                int::<I>, 
-                float::<F>, float::<F>, float::<F>, // min coords
-                float::<F>, float::<F>, float::<F>, // max coords
-                tags::<U, I>, tags::<U, I>,         // physical tags, surface tags
+                int::<I>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                tags::<U, I>,
+                tags::<U, I>,
             )
-            .map(|(tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags, _)| Volume {
-                tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags
-            }),
+                .map(
+                    |(tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags, _)| Volume {
+                        tag,
+                        min_x,
+                        min_y,
+                        min_z,
+                        max_x,
+                        max_y,
+                        max_z,
+                        physical_tags,
+                    },
+                ),
         )
         .parse_next(stream)
         .map_err(|e| anyhow!("failed to parse volumes: {e}"))?;
@@ -365,8 +379,6 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
             volumes,
         })
     }
-
-
 }
 
 /// Helper for parsing lists of tags
