@@ -12,8 +12,7 @@ use winnow::{
 
 use crate::gmsh::{
     mshfile::{
-        Curve, Entities, MshData, MshDataFormat, MshFile, MshHeader, PhysicalName, PhysicalNames,
-        Point, SizeTypeSize, Surface, Volume,
+        Curve, Entities, MshData, MshDataFormat, MshFile, MshHeader, NodeBlock, Nodes, PhysicalName, PhysicalNames, Point, SizeTypeSize, Surface, Volume
     },
     numbers::{float, int, size_t},
 };
@@ -309,7 +308,7 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
 
         // parse the surfaces
         let surfaces: Vec<Surface<I, F>> = repeat(
-            n_curves.to_usize().unwrap_or_default(),
+            n_surfaces.to_usize().unwrap_or_default(),
             (
                 int::<I>,
                 float::<F>,
@@ -379,11 +378,35 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
             volumes,
         })
     }
+
+    /// Parses the nodes section 
+    fn parse_nodes(&self, stream: &mut MshStream<'a>) -> Result<Nodes<U, I, F>> {
+        let (n_entity_blocks, n_nodes, min_node_tag, max_node_tag) =
+            (size_t::<U>, size_t::<U>, size_t::<U>, size_t::<U>)
+                .parse_next(stream)
+                .map_err(|e| anyhow!("failed to parse node block header: {e}"))?;
+
+        let blocks: Vec<NodeBlock<U, I, F>> = repeat(
+            n_entity_blocks.to_usize().unwrap_or_default(),
+            |stream: &mut MshStream<'a>| {
+                let (dim, tag, parametric, n_nodes) = (
+                    int::<I>, 
+                    int::<I>, 
+                    int::<I>.verify(|v| v == 0), 
+                    size_t::<U>
+                )
+                .parse_next(stream)
+            }
+        ).parse_next(stream);
+        
+
+
+        todo!()
+    }
 }
 
 /// Helper for parsing lists of tags
 fn tags<'a, U: MshUsizeType, I: MshIntType>(input: &mut MshStream<'a>) -> winnow::Result<Vec<I>> {
     let count = size_t::<U>(input)?;
-
     repeat(count.to_usize().unwrap_or_default(), int::<I>).parse_next(input)
 }

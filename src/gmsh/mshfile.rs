@@ -192,7 +192,7 @@ pub struct Nodes<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
 pub struct NodeBlock<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub entity_dim: I,
     pub entity_tag: I,
-    pub node_tags: Option<HashMap<U, usize>>,
+    pub node_tags: Option<Array1<U>>,
     pub nodes: Array2<F>,
 }
 
