@@ -3,8 +3,11 @@ use std::{collections::HashMap, hash::Hash, str::FromStr};
 use anyhow::{Ok, Result, bail};
 use ndarray::{Array1, Array2};
 use num::{Float, FromPrimitive, Integer, Signed};
+use num_derive::FromPrimitive;
 use num_traits::{ToPrimitive, Unsigned};
 use winnow::binary::Endianness;
+
+use crate::gmsh::parsers::MshParser;
 
 /// Trait for msh file usize_t types
 pub trait MshUsizeType:
@@ -93,9 +96,23 @@ pub enum SizeTypeSize {
     U64,
 }
 
-pub struct MshFile<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
+pub struct Msh<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub header: MshHeader,
     pub data: MshData<U, I, F>,
+}
+
+impl<'a, U, I, F> TryFrom<&'a [u8]> for Msh<U, I, F>
+where 
+    U: MshUsizeType, 
+    I: MshIntType, 
+    F: MshFloatType
+{
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        let parser = MshParser::<U, I, F>::new();
+        parser.parse(bytes)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -185,20 +202,27 @@ pub struct Nodes<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
     pub n_nodes: U,
     pub min_node_tag: U,
     pub max_node_tag: U,
-    pub blocks: Vec<NodeBlock<U, I, F>>,
+    pub node_blocks: Vec<NodeBlock<U, I, F>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct NodeBlock<U: MshUsizeType, I: MshIntType, F: MshFloatType> {
-    pub entity_dim: I,
-    pub entity_tag: I,
-    pub node_tags: Option<Array1<U>>,
-    pub nodes: Array2<F>,
+    pub dim: I,
+    pub tag: I,
+    pub nodes: Vec<Node<U, F>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Node<U: MshUsizeType, F: MshFloatType> {
+    pub tag: U,
+    pub x: F,
+    pub y: F,
+    pub z: F,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Elements<U: MshUsizeType, I: MshIntType> {
-    pub num_elements: U,
+    pub n_elements: U,
     pub min_element_tag: U,
     pub max_element_tag: U,
     pub element_blocks: Vec<ElementBlock<U, I>>,
@@ -206,21 +230,20 @@ pub struct Elements<U: MshUsizeType, I: MshIntType> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ElementBlock<U: MshUsizeType, I: MshIntType> {
-    pub entity_dim: I,
-    pub entity_tag: I,
+    pub dim: I,
+    pub tag: I,
     pub element_type: GmshElementType,
-    pub element_tags: Option<HashMap<U, usize>>,
     pub elements: Vec<Element<U>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Element<U: MshUsizeType> {
     pub tag: U,
-    pub nodes: Array1<U>,
+    pub nodes: Vec<U>,
 }
 
 #[rustfmt::skip]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, FromPrimitive)]
 pub enum GmshElementType {
     Pnt = 15, PntSub = 133,
     Lin1 = 84, Lin2 = 1, Lin3 = 8, Lin4 = 26, Lin5 = 27, Lin6 = 28, Lin7 = 62, Lin8 = 63, Lin9 = 64, Lin10 = 65, Lin11 = 66, LinB = 67, LinC = 70, LinSub = 134,
