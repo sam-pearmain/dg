@@ -128,7 +128,7 @@ where
 fn parse_header<'a>(stream: &mut MshStream<'a>) -> Result<MshHeader> {
     let ((version, format, size_t_size), mut endianness) = (
         preceded(
-            (literal(b"$MshFormat"), multispace0),
+            (literal(b"$MeshFormat"), multispace0),
             (
                 "4.1".value(String::from("4.1")),
                 preceded(
