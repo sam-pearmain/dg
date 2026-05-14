@@ -3,16 +3,19 @@ use std::marker::PhantomData;
 use anyhow::{Ok, Result, anyhow};
 use winnow::{
     Parser, Stateful,
-    ascii::{dec_int, digit1, float, line_ending, multispace0, newline, space1},
-    binary::{Endianness, be_f64, be_i32, be_u32, be_u64, le_f64, le_i32, le_u32, le_u64},
-    combinator::{alt, delimited, dispatch, fail, preceded, repeat, terminated},
+    ascii::{dec_int, multispace0, space1},
+    binary::Endianness,
+    combinator::{alt, delimited, preceded, repeat, terminated},
     error::ContextError,
-    prelude::*,
-    token::{literal, take_until, take_while},
+    token::{literal, take_while},
 };
 
-use crate::gmsh::mshfile::{
-    Entities, MshData, MshDataFormat, MshFile, MshHeader, PhysicalName, PhysicalNames, SizeTypeSize,
+use crate::gmsh::{
+    mshfile::{
+        Curve, Entities, MshData, MshDataFormat, MshFile, MshHeader, PhysicalName, PhysicalNames,
+        Point, SizeTypeSize, Surface, Volume,
+    },
+    numbers::{float, int, size_t},
 };
 
 use super::mshfile::{MshFloatType, MshIntType, MshUsizeType};
@@ -98,8 +101,9 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
             }
 
             // try to get the tag for the next section
-            let tag = terminated(
-                take_while(0.., (b'$', b'a'..=b'z', b'A'..=b'Z')),
+            let tag = delimited(
+                multispace0,
+                take_while(1.., (b'$', b'a'..=b'z', b'A'..=b'Z')),
                 multispace0,
             )
             .try_map(|bytes| str::from_utf8(bytes))
@@ -108,13 +112,15 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
 
             match tag {
                 "$PhysicalNames" => {
-                    todo!()
+                    let physical_names = self.parse_physical_names(stream)?;
+                    data.physical_names = Some(physical_names);
                 }
                 "$Entities" => {
-                    todo!()
+                    let entities = self.parse_entities(stream)?;
+                    data.entities = Some(entities);
                 }
                 "$PartitionedEntities" => {
-                    todo!()
+                    unimplemented!()
                 }
                 "$Nodes" => {
                     todo!()
@@ -126,22 +132,22 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
                     todo!()
                 }
                 "$GhostElements" => {
-                    todo!()
+                    unimplemented!("$GhostElements block is currently unsupported")
                 }
                 "$Parametrizations" => {
-                    todo!()
+                    unimplemented!("$Parametrizations block is currently unsupported")
                 }
                 "$NodeData" => {
-                    todo!()
+                    unimplemented!("$NodeData block is currently unsupported")
                 }
                 "$ElementData" => {
-                    todo!()
+                    unimplemented!("$ElementData block is currently unsupported")
                 }
                 "$ElementNodeData" => {
-                    todo!()
+                    unimplemented!("$ElementNodeData block is currently unsupported")
                 }
                 "$InterpolationScheme" => {
-                    todo!()
+                    unimplemented!("$InterpolationScheme block is currently unsupported")
                 }
                 _ => {
                     unimplemented!("unrecognised block: {}", tag)
@@ -209,4 +215,163 @@ impl<'a, U: MshUsizeType, I: MshIntType, F: MshFloatType> MshParser<U, I, F> {
             endianness,
         })
     }
+
+    /// Parses the physical names block
+    fn parse_physical_names(&self, stream: &mut MshStream<'a>) -> Result<PhysicalNames<I>> {
+        let n_physical_names = dec_int::<_, I, _>
+            .parse_next(stream)
+            .map_err(|e: ContextError| anyhow!("failed to get n_physical_names: {e}"))?;
+
+        let names: Vec<PhysicalName<I>> = repeat(
+            n_physical_names.to_usize().unwrap_or_default(),
+            (
+                preceded(multispace0, dec_int::<_, I, _>),
+                preceded(multispace0, dec_int::<_, I, _>),
+                preceded(
+                    multispace0,
+                    delimited(b'"', take_while(0..=127, |c: u8| c != b'"'), b'"'),
+                )
+                .try_map(std::str::from_utf8)
+                .map(String::from),
+            )
+                .map(|(dimension, tag, name)| PhysicalName {
+                    dimension,
+                    tag,
+                    name,
+                }),
+        )
+        .parse_next(stream)
+        .map_err(|e: ContextError| anyhow!("failed to parse physical names: {e}"))?;
+
+        // exit the block
+        (multispace0, literal("$EndPhysicalNames"), multispace0)
+            .parse_next(stream)
+            .map_err(|e: ContextError| anyhow!("failed to exit block: {e}"))?;
+
+        Ok(PhysicalNames {
+            n_physical_names,
+            names,
+        })
+    }
+
+    /// Parses the entities section
+    fn parse_entities(&self, stream: &mut MshStream<'a>) -> Result<Entities<I, F>> {
+        let (n_points, n_curves, n_surfaces, n_volumes) =
+            (size_t::<U>, size_t::<U>, size_t::<U>, size_t::<U>)
+                .parse_next(stream)
+                .map_err(|e| anyhow!("failed to parse entities header: {e}"))?;
+
+        // parse the points
+        let points: Vec<Point<I, F>> = repeat(
+            n_points.to_usize().unwrap_or_default(),
+            (int::<I>, float::<F>, float::<F>, float::<F>, tags::<U, I>).map(
+                |(tag, x, y, z, physical_tags)| Point {
+                    tag,
+                    x,
+                    y,
+                    z,
+                    physical_tags,
+                },
+            ),
+        )
+        .parse_next(stream)
+        .map_err(|e| anyhow!("failed to parse points: {e}"))?;
+
+        // parse the curves
+        let curves: Vec<Curve<I, F>> = repeat(
+            n_curves.to_usize().unwrap_or_default(),
+            (
+                int::<I>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                tags::<U, I>,
+                tags::<U, I>,
+            )
+                .map(
+                    |(tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags, _)| Curve {
+                        tag,
+                        min_x,
+                        min_y,
+                        min_z,
+                        max_x,
+                        max_y,
+                        max_z,
+                        physical_tags,
+                    },
+                ),
+        )
+        .parse_next(stream)
+        .map_err(|e| anyhow!("failed to parse curves: {e}"))?;
+
+        // parse the surfaces
+        let surfaces: Vec<Surface<I, F>> = repeat(
+            n_curves.to_usize().unwrap_or_default(),
+            (
+                int::<I>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                float::<F>,
+                tags::<U, I>,
+                tags::<U, I>,
+            )
+                .map(
+                    |(tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags, _)| Surface {
+                        tag,
+                        min_x,
+                        min_y,
+                        min_z,
+                        max_x,
+                        max_y,
+                        max_z,
+                        physical_tags,
+                    },
+                ),
+        )
+        .parse_next(stream)
+        .map_err(|e| anyhow!("failed to parse curves: {e}"))?;
+
+        #[rustfmt::skip]
+        let volumes: Vec<Volume<I, F>> = repeat(
+            n_volumes.to_usize().unwrap_or_default(),
+            (
+                int::<I>, 
+                float::<F>, float::<F>, float::<F>, // min coords
+                float::<F>, float::<F>, float::<F>, // max coords
+                tags::<U, I>, tags::<U, I>,         // physical tags, surface tags
+            )
+            .map(|(tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags, _)| Volume {
+                tag, min_x, min_y, min_z, max_x, max_y, max_z, physical_tags
+            }),
+        )
+        .parse_next(stream)
+        .map_err(|e| anyhow!("failed to parse volumes: {e}"))?;
+
+        // exit the block
+        (multispace0, literal("$EndEntities"), multispace0)
+            .parse_next(stream)
+            .map_err(|e: ContextError| anyhow!("failed to exit block: {e}"))?;
+
+        Ok(Entities {
+            points,
+            curves,
+            surfaces,
+            volumes,
+        })
+    }
+
+
+}
+
+/// Helper for parsing lists of tags
+fn tags<'a, U: MshUsizeType, I: MshIntType>(input: &mut MshStream<'a>) -> winnow::Result<Vec<I>> {
+    let count = size_t::<U>(input)?;
+
+    repeat(count.to_usize().unwrap_or_default(), int::<I>).parse_next(input)
 }

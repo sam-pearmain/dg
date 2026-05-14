@@ -1,9 +1,8 @@
 use winnow::{
     Parser, Result,
-    ascii::{dec_int, dec_uint},
+    ascii::{dec_int, dec_uint, multispace0},
     binary::{Endianness, be_f64, be_i32, be_u32, be_u64, le_f64, le_i32, le_u32, le_u64},
-    combinator::fail,
-    error::ContextError,
+    combinator::{fail, preceded},
 };
 
 use crate::gmsh::{
@@ -14,7 +13,7 @@ use crate::gmsh::{
 /// Parses a msh size_t type
 pub fn size_t<'a, U: MshUsizeType>(input: &mut MshStream<'a>) -> Result<U> {
     match input.state.format {
-        Some(MshDataFormat::Ascii) => dec_uint::<_, U, ContextError>.parse_next(input),
+        Some(MshDataFormat::Ascii) => preceded(multispace0, dec_uint::<_, U, _>).parse_next(input),
         Some(MshDataFormat::Binary) => match (input.state.size_t_size, input.state.endianness) {
             (Some(SizeTypeSize::U32), Some(Endianness::Little)) => {
                 le_u32.verify_map(U::from_u32).parse_next(input)
@@ -37,7 +36,7 @@ pub fn size_t<'a, U: MshUsizeType>(input: &mut MshStream<'a>) -> Result<U> {
 /// Parses a msh int type
 pub fn int<'a, I: MshIntType>(input: &mut MshStream<'a>) -> Result<I> {
     match input.state.format {
-        Some(MshDataFormat::Ascii) => dec_int::<_, I, ContextError>.parse_next(input),
+        Some(MshDataFormat::Ascii) => preceded(multispace0, dec_int::<_, I, _>).parse_next(input),
         Some(MshDataFormat::Binary) => match input.state.endianness {
             Some(Endianness::Little) => le_i32.verify_map(I::from_i32).parse_next(input),
             Some(Endianness::Big) => be_i32.verify_map(I::from_i32).parse_next(input),
@@ -50,7 +49,7 @@ pub fn int<'a, I: MshIntType>(input: &mut MshStream<'a>) -> Result<I> {
 /// Parses a msh float type
 pub fn float<'a, F: MshFloatType>(input: &mut MshStream<'a>) -> Result<F> {
     match input.state.format {
-        Some(MshDataFormat::Ascii) => winnow::ascii::float.parse_next(input),
+        Some(MshDataFormat::Ascii) => preceded(multispace0, winnow::ascii::float).parse_next(input),
         Some(MshDataFormat::Binary) => match input.state.endianness {
             Some(Endianness::Little) => le_f64.verify_map(F::from_f64).parse_next(input),
             Some(Endianness::Big) => be_f64.verify_map(F::from_f64).parse_next(input),
@@ -63,8 +62,7 @@ pub fn float<'a, F: MshFloatType>(input: &mut MshStream<'a>) -> Result<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::anyhow;
-    use winnow::{Stateful, ascii::multispace0, combinator::preceded};
+    use winnow::Stateful;
 
     use crate::gmsh::parser::MshParserState;
 
@@ -79,18 +77,13 @@ mod tests {
             },
         };
 
-        let (s, i, f) = (
-            size_t::<usize>,
-            preceded(multispace0, int::<i32>),
-            preceded(multispace0, float::<f64>),
-        )
+        let (s, i, f) = (size_t::<usize>, int::<i32>, float::<f64>)
             .parse_next(&mut stream)
-            .map_err(|_| anyhow!("erm"))
             .expect("wtf");
 
         assert_eq!(s, 42);
         assert_eq!(i, -123);
-        assert!((f - 3.14159).abs() < f64::EPSILON);
+        assert_eq!(f, 3.14159);
     }
 
     #[test]
@@ -109,14 +102,13 @@ mod tests {
             },
         };
 
-        let s: usize = size_t(&mut stream).unwrap();
+        let (s, i, f) = (size_t::<usize>, int::<i32>, float::<f64>)
+            .parse_next(&mut stream)
+            .expect("wtf");
+
         assert_eq!(s, 1000);
-
-        let i: i32 = int(&mut stream).unwrap();
         assert_eq!(i, -50);
-
-        let f: f64 = float(&mut stream).unwrap();
-        assert!((f - 2.718).abs() < f64::EPSILON);
+        assert_eq!(f, 2.718);
     }
 
     #[test]

@@ -153,7 +153,7 @@ pub struct Curve<I: MshIntType, F: MshFloatType> {
     pub max_x: F,
     pub max_y: F,
     pub max_z: F,
-    pub point_tags: Vec<I>,
+    pub physical_tags: Vec<I>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -165,7 +165,7 @@ pub struct Surface<I: MshIntType, F: MshFloatType> {
     pub max_x: F,
     pub max_y: F,
     pub max_z: F,
-    pub curve_tags: Vec<I>,
+    pub physical_tags: Vec<I>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -177,7 +177,7 @@ pub struct Volume<I: MshIntType, F: MshFloatType> {
     pub max_x: F,
     pub max_y: F,
     pub max_z: F,
-    pub curve_tags: Vec<I>,
+    pub physical_tags: Vec<I>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
