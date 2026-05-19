@@ -1,31 +1,31 @@
-pub enum BaseShape {
-    Line,
-    Triangle,
-    Quadrilateral,
-    Tetrahedron,
-    Hexahedron,
-    Prism,
-    Pyramid,
+use ndarray::{Array2, ArrayView1};
+use num::Float;
+
+use crate::polys::Basis;
+
+/// The seven reference shapes
+pub enum Shape {
+    Line { order: usize },
+    Triangle { order: usize },
+    Quadrilateral { order: usize },
+    Tetrahedron { order: usize },
+    Hexahedron { order: usize },
+    Prism { order: usize },
+    Pyramid { order: usize },
 }
 
-impl BaseShape {
-    pub fn ndims(&self) -> usize {
+impl Shape {
+    pub fn dimensions(&self) -> usize {
         match self {
-            Self::Line => 1,
-            Self::Triangle => 2,
-            Self::Quadrilateral => 2,
+            Self::Line { order: _ } => 1,
+            Self::Triangle { order: _ } | Self::Quadrilateral { order: _ } => 2,
             _ => 3,
         }
     }
 }
 
-pub trait Shape {
-    const BASE_SHAPE: BaseShape;
-
-    fn n_solution_points_from_order(order: usize) -> usize;
-    fn order_from_n_solution_points(n_pts: usize) -> usize;
+impl<F: Float> Basis<F> for Shape {
+    fn orthonormal_basis_at(points: ArrayView1<'_, F>) -> Array2<F> {
+        todo!()
+    }
 }
-
-// impl Shape for Line2 {}
-
-// impl Shape for Line3 {}
