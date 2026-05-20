@@ -1,0 +1,6 @@
+rule: gauss-legendre-lobatto
+shape: line
+
+{
+    
+}

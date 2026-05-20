@@ -1,0 +1,6 @@
+rule: gauss-legendre
+shape: line
+
+{
+    0.0 : 2.0 
+}
