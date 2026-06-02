@@ -13,9 +13,11 @@ where
     /// The orthonormal basis at given points
     fn orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
     /// The derivative of the orthonormal basis at given points
-    fn jacobi_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
+    fn grad_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
     /// The Vandermonde matrix at given points
-    fn vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
+    fn vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        self.orthonormal_basis_at(points)
+    }
     /// The inverted Vandermonde matrix at given points
     fn inverted_vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
         self.vandermonde_at(points)
@@ -28,8 +30,8 @@ where
             .dot(&self.inverted_vandermonde_at(points))
     }
     /// The derivative of the nodal basis at given points
-    fn jacobi_nodal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
-        self.jacobi_orthonormal_basis_at(points)
+    fn grad_nodal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        self.grad_orthonormal_basis_at(points)
             .dot(&self.inverted_vandermonde_at(points))
     }
 }
@@ -56,7 +58,7 @@ where
         basis
     }
 
-    fn jacobi_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+    fn grad_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
         let half = F::from(0.5).unwrap();
         let mut dbasis = legendre_derivative(self.order, points.column(0));
 
@@ -67,9 +69,24 @@ where
 
         dbasis
     }
+}
 
-    fn vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
-        self.orthonormal_basis_at(points)
+pub struct QuadBasis {
+    order: usize, 
+}
+
+impl<F> Basis<F> for QuadBasis 
+where
+    F: Float + Scalar + Lapack,
+{
+    const SHAPE: Shapes = Shapes::Quadrilateral;
+
+    fn orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        unimplemented!()
+    }
+
+    fn grad_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        unimplemented!()
     }
 }
 
