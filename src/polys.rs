@@ -1,23 +1,95 @@
-use ndarray::{Array2, ArrayView1};
+use ndarray::{Array2, ArrayView1, ArrayView2, Axis};
+use ndarray_linalg::{Inverse, Lapack, Scalar};
 use num_traits::Float;
+
+use crate::shapes::{Shape, Shapes};
 
 pub trait Basis<F>
 where
-    F: Float,
+    F: Float + Scalar + Lapack,
 {
-    fn orthonormal_basis_at(points: ArrayView1<'_, F>) -> Array2<F>;
+    const SHAPE: Shapes;
+
+    /// The orthonormal basis at given points
+    fn orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
+    /// The derivative of the orthonormal basis at given points
+    fn jacobi_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
+    /// The Vandermonde matrix at given points
+    fn vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
+    /// The inverted Vandermonde matrix at given points
+    fn inverted_vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        self.vandermonde_at(points)
+            .inv()
+            .expect("failed vandermonde inversion, check precision and polynomial order")
+    }
+    /// The nodal basis at given points
+    fn nodal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        self.orthonormal_basis_at(points)
+            .dot(&self.inverted_vandermonde_at(points))
+    }
+    /// The derivative of the nodal basis at given points
+    fn jacobi_nodal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        self.jacobi_orthonormal_basis_at(points)
+            .dot(&self.inverted_vandermonde_at(points))
+    }
 }
 
-/// Computes the value of the jacobi polynomials at specified evaluation points to a given degree
-pub fn jacobi<F: Float>(degree: usize, alpha: F, beta: F, points: ArrayView1<'_, F>) -> Array2<F> {
+pub struct LineBasis {
+    order: usize,
+}
+
+impl<F> Basis<F> for LineBasis
+where
+    F: Float + Scalar + Lapack,
+{
+    const SHAPE: Shapes = Shapes::Line;
+
+    fn orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        let half = F::from(0.5).unwrap();
+        let mut basis = legendre(self.order, points.column(0));
+
+        for (i, mut col) in basis.axis_iter_mut(Axis(1)).enumerate() {
+            let i_as_float = F::from(i).unwrap();
+            col.mapv_inplace(|val| val * Float::sqrt(i_as_float + half));
+        }
+
+        basis
+    }
+
+    fn jacobi_orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        let half = F::from(0.5).unwrap();
+        let mut dbasis = legendre_derivative(self.order, points.column(0));
+
+        for (i, mut col) in dbasis.axis_iter_mut(Axis(1)).enumerate() {
+            let i_as_float = F::from(i).unwrap();
+            col.mapv_inplace(|val| val * Float::sqrt(i_as_float + half));
+        }
+
+        dbasis
+    }
+
+    fn vandermonde_at(&self, points: ArrayView2<'_, F>) -> Array2<F> {
+        self.orthonormal_basis_at(points)
+    }
+}
+
+#[rustfmt::skip]
+/// Computes the value of the Jacobi polynomials at specified evaluation points to a given degree
+pub fn jacobi<F: Float>(
+    degree: usize, 
+    alpha: F, 
+    beta: F, 
+    points: ArrayView1<'_, F>
+) -> Array2<F> {
     let one = F::one();
     let two = F::from(2).unwrap();
 
-    let mut j = Array2::<F>::ones((degree + 1, points.len()));
+    let mut j = Array2::<F>::ones((points.len(), degree + 1));
 
     if degree >= 1 {
-        let j1 = points.mapv(|zi| ((alpha + beta + two) * zi + (alpha - beta)) / two);
-        j.row_mut(1).assign(&j1);
+        for i in 0..j.nrows() {
+            j[[i, 1]] = ((alpha + beta + two) * points[i] + (alpha - beta)) / two;
+        } 
     }
 
     if degree >= 2 {
@@ -41,9 +113,8 @@ pub fn jacobi<F: Float>(degree: usize, alpha: F, beta: F, points: ArrayView1<'_,
                     * (alpha + beta + deg_as_float)
                     * (alpha + beta + two * deg_as_float - two));
 
-            for i in 0..points.len() {
-                let val = (aq * points[i] - bq) * j[[deg - 1, i]] - cq * j[[deg - 2, i]];
-                j[[deg, i]] = val;
+            for i in 0..j.nrows() {
+                j[[i, deg]] = (aq * points[i] - bq) * j[[i, deg - 1]] - cq * j[[i, deg - 2]];
             }
         }
     }
@@ -51,7 +122,7 @@ pub fn jacobi<F: Float>(degree: usize, alpha: F, beta: F, points: ArrayView1<'_,
     j
 }
 
-/// Computes the derivative of the jacobi polynomials at specified evaluation points to a given degree
+/// Computes the derivative of the Jacobi polynomials at specified evaluation points to a given degree
 pub fn jacobi_derivative<F: Float>(
     degree: usize,
     alpha: F,
@@ -61,21 +132,31 @@ pub fn jacobi_derivative<F: Float>(
     let one = F::one();
     let two = F::from(2).unwrap();
 
-    let mut dj = Array2::zeros((degree + 1, points.len()));
+    let mut dj = Array2::zeros((points.len(), degree + 1));
 
     if degree >= 1 {
         let j_previous = jacobi(degree - 1, alpha + one, beta + one, points);
 
-        for deg in 0..degree {
+        for deg in 1..degree {
             let deg_as_float = F::from(deg).unwrap();
 
             for i in 0..points.len() {
-                dj[[deg + 1, i]] = j_previous[[deg, i]] * (deg_as_float + alpha + beta + two) / two;
+                dj[[i, deg]] = j_previous[[i, deg - 1]] * (deg_as_float + alpha + beta + one) / two;
             }
         }
     }
 
     dj
+}
+
+/// Computes the Legendre polynomials at specified points up to a given order
+pub fn legendre<F: Float>(degree: usize, points: ArrayView1<'_, F>) -> Array2<F> {
+    jacobi(degree, F::zero(), F::zero(), points)
+}
+
+/// Computes the derivative of the Legendre polynomials at specified points up to a given order
+pub fn legendre_derivative<F: Float>(degree: usize, points: ArrayView1<'_, F>) -> Array2<F> {
+    jacobi_derivative(degree, F::zero(), F::zero(), points)
 }
 
 #[cfg(test)]
@@ -145,7 +226,7 @@ mod tests {
     fn test_vandermonde_inversion() {
         use ndarray_linalg::Inverse;
 
-        let points = array![-1.0_f64, 0.0_f64, 1.0_f64];
+        let points = array![-1.0_f32, 0.0_f32, 1.0_f32];
         let degree = 2;
 
         let j = jacobi(degree, 0.0, 0.0, points.view());

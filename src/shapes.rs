@@ -1,15 +1,26 @@
-use std::marker::PhantomData;
-
 use ndarray::{Array1, Array2};
 use num::Float;
 
 pub trait Dimensioned {
+    /// The number of dimensions
     fn dimensions(&self) -> usize;
+}
+
+pub trait Shape<F>: Dimensioned
+where
+    F: Float,
+{
+    /// The number of points which define the shape (i.e., the number of corners)
+    fn points(&self) -> usize;
+    /// The bounds of the reference shape
+    fn bounds(&self) -> Array2<F>;
+    /// The faces of the shape
+    fn faces(&self) -> Vec<Face<F>>;
 }
 
 /// The seven basic shapes
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Shape {
+pub enum Shapes {
     Line,
     Triangle,
     Quadrilateral,
@@ -36,7 +47,7 @@ pub enum Face<F: Float> {
     },
 }
 
-impl Dimensioned for Shape {
+impl Dimensioned for Shapes {
     fn dimensions(&self) -> usize {
         match self {
             Self::Line => 1,
@@ -55,9 +66,8 @@ impl<F: Float> Dimensioned for Face<F> {
     }
 }
 
-impl Shape {
-    /// The number of points which define the shape (i.e., the number of corners)
-    pub fn points(&self) -> usize {
+impl<F: Float> Shape<F> for Shapes {
+    fn points(&self) -> usize {
         match self {
             Self::Line => 2,
             Self::Triangle => 3,
@@ -69,13 +79,13 @@ impl Shape {
         }
     }
 
-    /// The bounds of the reference shape
     #[rustfmt::skip]
-    pub fn bounds<'a, F: Float>(&self) -> Array2<F> {
+    fn bounds(&self) -> Array2<F> {
         let zero = F::zero();
         let one = F::one();
 
-        let extents = (self.points(), self.dimensions());
+        // get the extents of the shape
+        let extents = (<Shapes as Shape<F>>::points(self), self.dimensions());
 
         match self {
             Self::Line => Array2::from_shape_vec(extents, vec![
@@ -127,8 +137,7 @@ impl Shape {
         }
     }
 
-    /// The faces of the shape
-    pub fn faces<F: Float>(&self) -> Vec<Face<F>> {
+    fn faces(&self) -> Vec<Face<F>> {
         let zero = F::zero();
         let one = F::one();
         let half = F::from(0.5).unwrap();
@@ -256,47 +265,5 @@ impl Shape {
                 },
             ],
         }
-    }
-}
-
-pub trait ReferenceShape<F> 
-where 
-    F: Float
-{
-    fn points(&self) -> usize;
-    fn bounds(&self) -> Array2<F>;
-    fn faces(&self) -> Vec<Face<F>>;
-}
-
-impl<F: Float> Dimensioned for dyn ReferenceShape<F> {
-    fn dimensions(&self) -> usize {
-        self.shape().dimensions()
-    }
-}
-
-pub struct Line<F: Float> {
-    _marker: PhantomData<F>
-}
-
-impl<F: Float> ReferenceShape<F> for Line<F> {
-    fn shape(&self) -> Shape {
-        Shape::Line
-    }
-
-    fn points(&self) -> usize {
-        2
-    }
-
-    fn bounds(&self) -> Array2<F> {
-        let one = F::one();
-
-        Array2::from_shape_vec((self.points(), self.dimensions()), vec![
-            -one, 
-            one
-        ]).unwrap()
-    }
-
-    fn faces(&self) -> Vec<Face<F>> {
-        todo!()
     }
 }
