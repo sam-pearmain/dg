@@ -1,25 +1,30 @@
-use crate::shapes::{Dimensioned, Shape};
+use std::marker::PhantomData;
+
+use num::Float;
+
+use crate::shapes::{Dimensioned, Line, ReferenceShape, Shape};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ReferenceElement {
-    shape: Shape,
+struct ReferenceElement<F: Float, S: ReferenceShape<F> + Dimensioned> {
+    shape: S, 
     order: usize,
+    _marker: PhantomData<(F, S)>
 }
 
-impl Dimensioned for ReferenceElement {
+impl<F: Float, S: ReferenceShape<F> + Dimensioned> Dimensioned for ReferenceElement<F, S> {
     fn dimensions(&self) -> usize {
         self.shape.dimensions()
     }
 }
 
-impl ReferenceElement {
-    fn new(shape: Shape, order: usize) -> Self {
-        Self { shape, order }
+impl<F: Float, S: ReferenceShape<F> + Dimensioned> ReferenceElement<F, S> {
+    fn new(order: usize) -> Self {
+        Self { order }
     }
 
     fn n_solution_points(&self) -> usize {
         match self.shape {
-            Shape::Line => self.order + 1, 
+            S::Line => self.order + 1, 
             Shape::Triangle => (self.order + 1) * (self.order + 2) / 2, 
             Shape::Quadrilateral => (self.order + 1) * (self.order + 1), 
             Shape::Tetrahedron => (self.order + 1) * (self.order + 2) * (self.order + 3) / 6, 
@@ -29,3 +34,5 @@ impl ReferenceElement {
         }
     }
 }
+
+pub type ReferenceLine<F: Float> = ReferenceElement<F, Line<F>>;

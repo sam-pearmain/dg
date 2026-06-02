@@ -1,5 +1,6 @@
-use crate::polys::Basis;
-use ndarray::{Array1, Array2, ArrayView1};
+use std::marker::PhantomData;
+
+use ndarray::{Array1, Array2};
 use num::Float;
 
 pub trait Dimensioned {
@@ -258,8 +259,44 @@ impl Shape {
     }
 }
 
-impl<F: Float> Basis<F> for Shape {
-    fn orthonormal_basis_at(points: ArrayView1<'_, F>) -> Array2<F> {
+pub trait ReferenceShape<F> 
+where 
+    F: Float
+{
+    fn points(&self) -> usize;
+    fn bounds(&self) -> Array2<F>;
+    fn faces(&self) -> Vec<Face<F>>;
+}
+
+impl<F: Float> Dimensioned for dyn ReferenceShape<F> {
+    fn dimensions(&self) -> usize {
+        self.shape().dimensions()
+    }
+}
+
+pub struct Line<F: Float> {
+    _marker: PhantomData<F>
+}
+
+impl<F: Float> ReferenceShape<F> for Line<F> {
+    fn shape(&self) -> Shape {
+        Shape::Line
+    }
+
+    fn points(&self) -> usize {
+        2
+    }
+
+    fn bounds(&self) -> Array2<F> {
+        let one = F::one();
+
+        Array2::from_shape_vec((self.points(), self.dimensions()), vec![
+            -one, 
+            one
+        ]).unwrap()
+    }
+
+    fn faces(&self) -> Vec<Face<F>> {
         todo!()
     }
 }
