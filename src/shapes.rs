@@ -1,10 +1,10 @@
-use ndarray::{Array1, Array2};
 use crate::float::Float;
+use ndarray::{Array1, Array2, array};
 
 /// The trait for anything with dimensions
 pub trait Dimensioned {
     /// The number of dimensions
-    const DIMENSIONS: usize;
+    fn dimensions() -> usize;
 }
 
 /// The base level trait defining a shape
@@ -13,17 +13,14 @@ where
     F: Float,
 {
     /// The number of points which define the shape (i.e., the number of corners)
-    const POINTS: usize;
-    /// The extents of the shape
-    const EXTENTS: (usize, usize) = (Self::POINTS, Self::DIMENSIONS);
-
+    fn points() -> usize;
     /// The bounds of the reference shape
     fn bounds() -> Array2<F>;
     /// The faces of the shape
     fn faces() -> Vec<Face<F>>;
     /// The extents of the shape
     fn extents() -> (usize, usize) {
-        (Self::POINTS, Self::DIMENSIONS)
+        (Self::points(), Self::dimensions())
     }
 }
 
@@ -62,11 +59,11 @@ pub enum Face<F: Float> {
         indices: [usize; 2],
         normal: Array1<F>,
     },
-    Triangle {
+    Tri {
         indices: [usize; 3],
         normal: Array1<F>,
     },
-    Quadrilateral {
+    Quad {
         indices: [usize; 4],
         normal: Array1<F>,
     },
@@ -75,7 +72,9 @@ pub enum Face<F: Float> {
 macro_rules! dimensioned_impl {
     ($shape:ty, $dimensions:literal) => {
         impl Dimensioned for $shape {
-            const DIMENSIONS: usize = $dimensions;
+            fn dimensions() -> usize {
+                $dimensions
+            }
         }
     };
 }
@@ -89,211 +88,249 @@ dimensioned_impl!(Pri, 3);
 dimensioned_impl!(Pyr, 3);
 
 impl<F: Float> Shape<F> for Line {
-    const POINTS: usize = 2;
+    fn points() -> usize {
+        2
+    }
 
     fn bounds() -> Array2<F> {
-        
+        array![[-F::one()], [F::one()]]
+    }
+
+    fn faces() -> Vec<Face<F>> {
+        vec![]
     }
 }
 
-impl<F: Float> Shape<F> for Shapes {
-    fn points(&self) -> usize {
-        match self {
-            Self::Line => 2,
-            Self::Triangle => 3,
-            Self::Quadrilateral => 4,
-            Self::Tetrahedron => 4,
-            Self::Hexahedron => 8,
-            Self::Prism => 6,
-            Self::Pyramid => 5,
-        }
+impl<F: Float> Shape<F> for Tri {
+    fn points() -> usize {
+        3
     }
 
-    #[rustfmt::skip]
-    fn bounds(&self) -> Array2<F> {
-        let zero = F::zero();
-        let one = F::one();
-
-        // get the extents of the shape
-        let extents = (<Shapes as Shape<F>>::points(self), self.dimensions());
-
-        match self {
-            Self::Line => Array2::from_shape_vec(extents, vec![
-                -one, 
-                one
-            ]).unwrap(), 
-            Self::Triangle => Array2::from_shape_vec(extents, vec![
-                -one, -one, 
-                one, -one, 
-                -one, one
-            ]).unwrap(),
-            Self::Quadrilateral => Array2::from_shape_vec(extents, vec![
-                -one, -one, 
-                one, -one, 
-                one, one, 
-                -one, one
-            ]).unwrap(), 
-            Self::Tetrahedron => Array2::from_shape_vec(extents, vec![
-                -one, -one, -one, 
-                one, -one, -one, 
-                -one, one, -one, 
-                -one, -one, one, 
-            ]).unwrap(), 
-            Self::Hexahedron => Array2::from_shape_vec(extents, vec![
-                -one, -one, -one, 
-                one, -one, -one, 
-                one, one, -one, 
-                -one, one, -one, 
-                -one, -one, one, 
-                one, -one, one, 
-                one, one, one, 
-                -one, one, one
-            ]).unwrap(),
-            Self::Prism => Array2::from_shape_vec(extents, vec![
-                -one, -one, -one, 
-                one, -one, -one, 
-                -one, one, -one, 
-                -one, -one, one, 
-                one, -one, one, 
-                -one, one, one
-            ]).unwrap(),
-            Self::Pyramid => Array2::from_shape_vec(extents, vec![
-                -one, -one, -one, 
-                one, -one, -one, 
-                one, one, -one, 
-                -one, one, -one, 
-                zero, zero, one
-            ]).unwrap(),
-        }
+    fn bounds() -> Array2<F> {
+        array![
+            [-F::one(), -F::one()],
+            [F::one(), -F::one()],
+            [-F::one(), F::one()],
+        ]
     }
 
-    fn faces(&self) -> Vec<Face<F>> {
-        let zero = F::zero();
-        let one = F::one();
-        let half = F::from(0.5).unwrap();
+    fn faces() -> Vec<Face<F>> {
+        vec![
+            Face::Line {
+                indices: [0, 1],
+                normal: array![F::zero(), -F::one()],
+            },
+            Face::Line {
+                indices: [1, 2],
+                normal: array![F::one(), -F::one()],
+            },
+            Face::Line {
+                indices: [2, 0],
+                normal: array![-F::one(), F::zero()],
+            },
+        ]
+    }
+}
 
-        match self {
-            Self::Line => vec![],
-            Self::Triangle => vec![
-                Face::Line {
-                    indices: [0, 1],
-                    normal: Array1::from_vec(vec![zero, -one]),
-                },
-                Face::Line {
-                    indices: [1, 2],
-                    normal: Array1::from_vec(vec![one, one]),
-                },
-                Face::Line {
-                    indices: [2, 0],
-                    normal: Array1::from_vec(vec![-one, zero]),
-                },
-            ],
-            Self::Quadrilateral => vec![
-                Face::Line {
-                    indices: [0, 1],
-                    normal: Array1::from_vec(vec![zero, -one]),
-                },
-                Face::Line {
-                    indices: [1, 2],
-                    normal: Array1::from_vec(vec![one, zero]),
-                },
-                Face::Line {
-                    indices: [2, 3],
-                    normal: Array1::from_vec(vec![zero, one]),
-                },
-                Face::Line {
-                    indices: [3, 0],
-                    normal: Array1::from_vec(vec![-one, zero]),
-                },
-            ],
-            Self::Tetrahedron => vec![
-                Face::Triangle {
-                    indices: [0, 1, 2],
-                    normal: Array1::from_vec(vec![zero, zero, -one]),
-                },
-                Face::Triangle {
-                    indices: [0, 1, 3],
-                    normal: Array1::from_vec(vec![zero, -one, zero]),
-                },
-                Face::Triangle {
-                    indices: [0, 2, 3],
-                    normal: Array1::from_vec(vec![-one, zero, zero]),
-                },
-                Face::Triangle {
-                    indices: [1, 2, 3],
-                    normal: Array1::from_vec(vec![one, one, one]),
-                },
-            ],
-            Self::Hexahedron => vec![
-                Face::Quadrilateral {
-                    indices: [0, 1, 2, 3],
-                    normal: Array1::from_vec(vec![zero, zero, -one]),
-                },
-                Face::Quadrilateral {
-                    indices: [0, 1, 5, 4],
-                    normal: Array1::from_vec(vec![zero, -one, zero]),
-                },
-                Face::Quadrilateral {
-                    indices: [1, 2, 6, 5],
-                    normal: Array1::from_vec(vec![one, zero, zero]),
-                },
-                Face::Quadrilateral {
-                    indices: [2, 3, 7, 6],
-                    normal: Array1::from_vec(vec![zero, one, zero]),
-                },
-                Face::Quadrilateral {
-                    indices: [3, 0, 4, 7],
-                    normal: Array1::from_vec(vec![-one, zero, zero]),
-                },
-                Face::Quadrilateral {
-                    indices: [4, 5, 6, 7],
-                    normal: Array1::from_vec(vec![zero, zero, one]),
-                },
-            ],
-            Self::Prism => vec![
-                Face::Triangle {
-                    indices: [0, 1, 2],
-                    normal: Array1::from_vec(vec![zero, zero, -one]),
-                },
-                Face::Triangle {
-                    indices: [3, 4, 5],
-                    normal: Array1::from_vec(vec![zero, zero, one]),
-                },
-                Face::Quadrilateral {
-                    indices: [0, 1, 4, 3],
-                    normal: Array1::from_vec(vec![zero, -one, zero]),
-                },
-                Face::Quadrilateral {
-                    indices: [1, 2, 5, 4],
-                    normal: Array1::from_vec(vec![one, one, zero]),
-                },
-                Face::Quadrilateral {
-                    indices: [2, 0, 3, 5],
-                    normal: Array1::from_vec(vec![-one, zero, zero]),
-                },
-            ],
-            Self::Pyramid => vec![
-                Face::Quadrilateral {
-                    indices: [0, 1, 2, 3],
-                    normal: Array1::from_vec(vec![zero, zero, -one]),
-                },
-                Face::Triangle {
-                    indices: [0, 1, 4],
-                    normal: Array1::from_vec(vec![zero, -one, half]),
-                },
-                Face::Triangle {
-                    indices: [1, 2, 4],
-                    normal: Array1::from_vec(vec![one, zero, half]),
-                },
-                Face::Triangle {
-                    indices: [2, 3, 4],
-                    normal: Array1::from_vec(vec![zero, one, half]),
-                },
-                Face::Triangle {
-                    indices: [3, 0, 4],
-                    normal: Array1::from_vec(vec![-one, zero, half]),
-                },
-            ],
-        }
+impl<F: Float> Shape<F> for Quad {
+    fn points() -> usize {
+        4
+    }
+
+    fn bounds() -> Array2<F> {
+        array![
+            [-F::one(), -F::one()],
+            [F::one(), -F::one()],
+            [F::one(), F::one()],
+            [-F::one(), F::one()],
+        ]
+    }
+
+    fn faces() -> Vec<Face<F>> {
+        vec![
+            Face::Line {
+                indices: [0, 1],
+                normal: array![F::zero(), -F::one()],
+            },
+            Face::Line {
+                indices: [1, 2],
+                normal: array![F::one(), F::zero()],
+            },
+            Face::Line {
+                indices: [2, 3],
+                normal: array![F::zero(), F::one()],
+            },
+            Face::Line {
+                indices: [3, 0],
+                normal: array![-F::one(), F::zero()],
+            },
+        ]
+    }
+}
+
+impl<F: Float> Shape<F> for Tet {
+    fn points() -> usize {
+        4
+    }
+
+    fn bounds() -> Array2<F> {
+        array![
+            [-F::one(), -F::one(), -F::one()],
+            [F::one(), -F::one(), -F::one()],
+            [-F::one(), F::one(), -F::one()],
+            [-F::one(), -F::one(), F::one()],
+        ]
+    }
+
+    fn faces() -> Vec<Face<F>> {
+        vec![
+            Face::Tri {
+                indices: [0, 1, 2],
+                normal: array![F::zero(), F::zero(), -F::one()],
+            },
+            Face::Tri {
+                indices: [0, 1, 3],
+                normal: array![F::zero(), -F::one(), F::zero()],
+            },
+            Face::Tri {
+                indices: [0, 2, 3],
+                normal: array![-F::one(), F::zero(), F::zero()],
+            },
+            Face::Tri {
+                indices: [1, 2, 3],
+                normal: array![F::one(), F::one(), F::one()],
+            },
+        ]
+    }
+}
+
+impl<F: Float> Shape<F> for Hex {
+    fn points() -> usize {
+        8
+    }
+
+    fn bounds() -> Array2<F> {
+        array![
+            [-F::one(), -F::one(), -F::one()],
+            [F::one(), -F::one(), -F::one()],
+            [F::one(), F::one(), -F::one()],
+            [-F::one(), F::one(), -F::one()],
+            [-F::one(), -F::one(), F::one()],
+            [F::one(), -F::one(), F::one()],
+            [F::one(), F::one(), F::one()],
+            [-F::one(), F::one(), F::one()],
+        ]
+    }
+
+    fn faces() -> Vec<Face<F>> {
+        vec![
+            Face::Quad {
+                indices: [0, 1, 2, 3],
+                normal: array![F::zero(), F::zero(), -F::one()],
+            },
+            Face::Quad {
+                indices: [0, 1, 5, 4],
+                normal: array![F::zero(), -F::one(), F::zero()],
+            },
+            Face::Quad {
+                indices: [1, 2, 6, 5],
+                normal: array![F::one(), F::zero(), F::zero()],
+            },
+            Face::Quad {
+                indices: [2, 3, 7, 6],
+                normal: array![F::zero(), F::one(), F::zero()],
+            },
+            Face::Quad {
+                indices: [3, 0, 4, 7],
+                normal: array![-F::one(), F::zero(), F::zero()],
+            },
+            Face::Quad {
+                indices: [4, 5, 6, 7],
+                normal: array![F::zero(), F::zero(), F::one()],
+            },
+        ]
+    }
+}
+
+impl<F: Float> Shape<F> for Pri {
+    fn points() -> usize {
+        6
+    }
+
+    fn bounds() -> Array2<F> {
+        array![
+            [-F::one(), -F::one(), -F::one()],
+            [F::one(), -F::one(), -F::one()],
+            [-F::one(), F::one(), -F::one()],
+            [-F::one(), -F::one(), F::one()],
+            [F::one(), -F::one(), F::one()],
+            [-F::one(), F::one(), F::one()]
+        ]
+    }
+
+    fn faces() -> Vec<Face<F>> {
+        vec![
+            Face::Tri {
+                indices: [0, 1, 2],
+                normal: array![F::zero(), F::zero(), -F::one()],
+            },
+            Face::Tri {
+                indices: [3, 4, 5],
+                normal: array![F::zero(), F::zero(), F::one()],
+            },
+            Face::Quad {
+                indices: [0, 1, 4, 3],
+                normal: array![F::zero(), -F::one(), F::zero()],
+            },
+            Face::Quad {
+                indices: [1, 2, 5, 4],
+                normal: array![F::one(), F::one(), F::zero()],
+            },
+            Face::Quad {
+                indices: [2, 0, 3, 5],
+                normal: array![-F::one(), F::zero(), F::zero()],
+            },
+        ]
+    }
+}
+
+impl<F: Float> Shape<F> for Pyr {
+    fn points() -> usize {
+        5
+    }
+
+    fn bounds() -> Array2<F> {
+        array![
+            [-F::one(), -F::one(), -F::one()],
+            [F::one(), -F::one(), -F::one()],
+            [F::one(), F::one(), -F::one()],
+            [-F::one(), F::one(), -F::one()],
+            [F::zero(), F::zero(), F::one()]
+        ]
+    }
+
+    fn faces() -> Vec<Face<F>> {
+        vec![
+            Face::Quad {
+                indices: [0, 1, 2, 3],
+                normal: array![F::zero(), F::zero(), -F::one()],
+            },
+            Face::Tri {
+                indices: [0, 1, 4],
+                normal: array![F::zero(), -F::one(), F::from(0.5).unwrap()],
+            },
+            Face::Tri {
+                indices: [1, 2, 4],
+                normal: array![F::one(), F::zero(), F::from(0.5).unwrap()],
+            },
+            Face::Tri {
+                indices: [2, 3, 4],
+                normal: array![F::zero(), F::one(), F::from(0.5).unwrap()],
+            },
+            Face::Tri {
+                indices: [3, 0, 4],
+                normal: array![-F::one(), F::zero(), F::from(0.5).unwrap()],
+            },
+        ]
     }
 }

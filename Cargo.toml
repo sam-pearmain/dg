@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-cudarc = "0.19.7"
+cudarc = { version = "0.19.7", features = ["cuda-13020"] }
 ndarray = "0.17.2"
 ndarray-linalg = { version = "0.18.1", features = ["netlib-system"] }
 ndarray-rand = "0.16.0"
