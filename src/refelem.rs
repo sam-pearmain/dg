@@ -18,7 +18,7 @@ impl<F: Float> Dimensioned for ReferenceElement<F> {
 }
 
 impl<F: Float> ReferenceElement<F> {
-    fn new(shape: Shape, order: usize) -> Self {
+    fn new(shape: Shapes, order: usize) -> Self {
         Self {
             shape,
             order,

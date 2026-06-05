@@ -1,34 +1,59 @@
 use ndarray::{Array1, Array2};
-use num::Float;
+use crate::float::Float;
 
+/// The trait for anything with dimensions
 pub trait Dimensioned {
     /// The number of dimensions
-    fn dimensions(&self) -> usize;
+    const DIMENSIONS: usize;
 }
 
+/// The base level trait defining a shape
 pub trait Shape<F>: Dimensioned
 where
     F: Float,
 {
     /// The number of points which define the shape (i.e., the number of corners)
-    fn points(&self) -> usize;
+    const POINTS: usize;
+    /// The extents of the shape
+    const EXTENTS: (usize, usize) = (Self::POINTS, Self::DIMENSIONS);
+
     /// The bounds of the reference shape
-    fn bounds(&self) -> Array2<F>;
+    fn bounds() -> Array2<F>;
     /// The faces of the shape
-    fn faces(&self) -> Vec<Face<F>>;
+    fn faces() -> Vec<Face<F>>;
+    /// The extents of the shape
+    fn extents() -> (usize, usize) {
+        (Self::POINTS, Self::DIMENSIONS)
+    }
 }
 
-/// The seven basic shapes
+/// A line
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Shapes {
-    Line,
-    Triangle,
-    Quadrilateral,
-    Tetrahedron,
-    Hexahedron,
-    Prism,
-    Pyramid,
-}
+pub struct Line {}
+
+/// A triangle
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tri {}
+
+/// A quadrilateral
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Quad {}
+
+/// A tetrahedron
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tet {}
+
+/// A hexahedron
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Hex {}
+
+/// A prism
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Pri {}
+
+/// A pyramid
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Pyr {}
 
 /// The definition of a face. The indices are in reference to the shape of which it is a face
 #[derive(Debug, Clone)]
@@ -47,22 +72,27 @@ pub enum Face<F: Float> {
     },
 }
 
-impl Dimensioned for Shapes {
-    fn dimensions(&self) -> usize {
-        match self {
-            Self::Line => 1,
-            Self::Triangle | Self::Quadrilateral => 2,
-            _ => 3,
+macro_rules! dimensioned_impl {
+    ($shape:ty, $dimensions:literal) => {
+        impl Dimensioned for $shape {
+            const DIMENSIONS: usize = $dimensions;
         }
-    }
+    };
 }
 
-impl<F: Float> Dimensioned for Face<F> {
-    fn dimensions(&self) -> usize {
-        match self {
-            Self::Line { .. } => 1,
-            _ => 2,
-        }
+dimensioned_impl!(Line, 1);
+dimensioned_impl!(Tri, 2);
+dimensioned_impl!(Quad, 2);
+dimensioned_impl!(Tet, 3);
+dimensioned_impl!(Hex, 3);
+dimensioned_impl!(Pri, 3);
+dimensioned_impl!(Pyr, 3);
+
+impl<F: Float> Shape<F> for Line {
+    const POINTS: usize = 2;
+
+    fn bounds() -> Array2<F> {
+        
     }
 }
 

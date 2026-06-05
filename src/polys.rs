@@ -72,10 +72,10 @@ where
 }
 
 pub struct QuadBasis {
-    order: usize, 
+    order: usize,
 }
 
-impl<F> Basis<F> for QuadBasis 
+impl<F> Basis<F> for QuadBasis
 where
     F: Float + Scalar + Lapack,
 {
