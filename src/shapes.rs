@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::float::Float;
 use ndarray::{Array1, Array2, array};
 
@@ -26,31 +28,45 @@ where
 
 /// A line
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Line {}
+pub struct Line<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// A triangle
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Tri {}
+pub struct Tri<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// A quadrilateral
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Quad {}
+pub struct Quad<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// A tetrahedron
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Tet {}
+pub struct Tet<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// A hexahedron
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Hex {}
+pub struct Hex<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// A prism
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Pri {}
+pub struct Pri<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// A pyramid
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Pyr {}
+pub struct Pyr<F: Float> {
+    _marker: PhantomData<F>
+}
 
 /// The definition of a face. The indices are in reference to the shape of which it is a face
 #[derive(Debug, Clone)]
@@ -69,25 +85,49 @@ pub enum Face<F: Float> {
     },
 }
 
-macro_rules! dimensioned_impl {
-    ($shape:ty, $dimensions:literal) => {
-        impl Dimensioned for $shape {
-            fn dimensions() -> usize {
-                $dimensions
-            }
-        }
-    };
+impl<F: Float> Dimensioned for Line<F> {
+    fn dimensions() -> usize {
+        1
+    }
 }
 
-dimensioned_impl!(Line, 1);
-dimensioned_impl!(Tri, 2);
-dimensioned_impl!(Quad, 2);
-dimensioned_impl!(Tet, 3);
-dimensioned_impl!(Hex, 3);
-dimensioned_impl!(Pri, 3);
-dimensioned_impl!(Pyr, 3);
+impl<F: Float> Dimensioned for Tri<F> {
+    fn dimensions() -> usize {
+        2
+    }
+}
 
-impl<F: Float> Shape<F> for Line {
+impl<F: Float> Dimensioned for Quad<F> {
+    fn dimensions() -> usize {
+        2
+    }
+}
+
+impl<F: Float> Dimensioned for Tet<F> {
+    fn dimensions() -> usize {
+        3
+    }
+}
+
+impl<F: Float> Dimensioned for Hex<F> {
+    fn dimensions() -> usize {
+        3
+    }
+}
+
+impl<F: Float> Dimensioned for Pri<F> {
+    fn dimensions() -> usize {
+        3
+    }
+}
+
+impl<F: Float> Dimensioned for Pyr<F> {
+    fn dimensions() -> usize {
+        3
+    }
+}
+
+impl<F: Float> Shape<F> for Line<F> {
     fn points() -> usize {
         2
     }
@@ -101,7 +141,7 @@ impl<F: Float> Shape<F> for Line {
     }
 }
 
-impl<F: Float> Shape<F> for Tri {
+impl<F: Float> Shape<F> for Tri<F> {
     fn points() -> usize {
         3
     }
@@ -132,7 +172,7 @@ impl<F: Float> Shape<F> for Tri {
     }
 }
 
-impl<F: Float> Shape<F> for Quad {
+impl<F: Float> Shape<F> for Quad<F> {
     fn points() -> usize {
         4
     }
@@ -168,7 +208,7 @@ impl<F: Float> Shape<F> for Quad {
     }
 }
 
-impl<F: Float> Shape<F> for Tet {
+impl<F: Float> Shape<F> for Tet<F> {
     fn points() -> usize {
         4
     }
@@ -204,7 +244,7 @@ impl<F: Float> Shape<F> for Tet {
     }
 }
 
-impl<F: Float> Shape<F> for Hex {
+impl<F: Float> Shape<F> for Hex<F> {
     fn points() -> usize {
         8
     }
@@ -252,7 +292,7 @@ impl<F: Float> Shape<F> for Hex {
     }
 }
 
-impl<F: Float> Shape<F> for Pri {
+impl<F: Float> Shape<F> for Pri<F> {
     fn points() -> usize {
         6
     }
@@ -294,7 +334,7 @@ impl<F: Float> Shape<F> for Pri {
     }
 }
 
-impl<F: Float> Shape<F> for Pyr {
+impl<F: Float> Shape<F> for Pyr<F> {
     fn points() -> usize {
         5
     }

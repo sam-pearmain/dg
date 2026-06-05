@@ -1,15 +1,15 @@
-use ndarray::{Array2, ArrayView1, ArrayView2, Axis};
-use ndarray_linalg::{Inverse, Lapack, Scalar};
-use num_traits::Float;
+use std::marker::PhantomData;
 
-use crate::shapes::{Shape, Shapes};
+use ndarray::{Array2, ArrayView1, ArrayView2, Axis};
+use ndarray_linalg::Inverse;
+
+use crate::float::Float;
+use crate::shapes::{Line, Shape};
 
 pub trait Basis<F>
 where
-    F: Float + Scalar + Lapack,
+    F: Float
 {
-    const SHAPE: Shapes;
-
     /// The orthonormal basis at given points
     fn orthonormal_basis_at(&self, points: ArrayView2<'_, F>) -> Array2<F>;
     /// The derivative of the orthonormal basis at given points
@@ -36,9 +36,12 @@ where
     }
 }
 
-pub struct LineBasis {
+pub struct ReferenceShape<F: Float, S: Shape<F>> {
     order: usize,
+    _marker: PhantomData<(F, S)>
 }
+
+pub type ReferenceLine<F: Float> = ReferenceShape<F, Line>;
 
 impl<F> Basis<F> for LineBasis
 where
