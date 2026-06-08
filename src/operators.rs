@@ -1,6 +1,6 @@
 use ndarray::Array2;
 
-use crate::{float::Float, basis::Basis};
+use crate::{basis::Basis, float::Float};
 
 /// Matrix operators build upon the basis functions
 pub trait Operators<F: Float>: Basis<F> {
@@ -16,7 +16,7 @@ pub trait Operators<F: Float>: Basis<F> {
     fn interior_quadrature_projection(&self) -> Array2<F>;
     /// The divergence of the correction basis
     fn interface_flux_correction_projection(&self) -> Array2<F>;
-    /// The interface 
+    /// The interface
     fn interface_gradient_correction_projection(&self) -> Array2<F>;
     /// The L2 projection matrix that integrates a scalar field at quadrature points and projects the result against the solution points
     fn quadrature_scalar_projection(&self) -> Array2<F>;
