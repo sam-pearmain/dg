@@ -89,26 +89,10 @@ pub type PyrBasis<F: Float> = ShapeBasis<F, Pyr<F>>;
 
 impl<F: Float> Basis<F> for LineBasis<F> {
     fn orthonormal_basis(order: usize, points: ArrayView2<'_, F>) -> Array2<F> {
-        let half = F::from(0.5).unwrap();
-        let mut basis = legendre(order, points.column(0));
-
-        for (i, mut col) in basis.axis_iter_mut(Axis(1)).enumerate() {
-            let i_as_float = F::from(i).unwrap();
-            col.mapv_inplace(|val| val * num_traits::Float::sqrt(i_as_float + half));
-        }
-
-        basis
+        todo!()
     }
 
     fn grad_orthonormal_basis(order: usize, points: ArrayView2<'_, F>) -> Array2<F> {
-        let half = F::from(0.5).unwrap();
-        let mut dbasis = legendre(order, points.column(0));
-
-        for (i, mut col) in dbasis.axis_iter_mut(Axis(1)).enumerate() {
-            let i_as_float = F::from(i).unwrap();
-            col.mapv_inplace(|val| val * num_traits::Float::sqrt(i_as_float + half));
-        }
-
-        dbasis
+        todo!()
     }
 }

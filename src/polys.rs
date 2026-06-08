@@ -83,3 +83,69 @@ pub fn legendre<F: Float>(degree: usize, points: ArrayView1<'_, F>) -> Array1<F>
 pub fn legendre_derivative<F: Float>(degree: usize, points: ArrayView1<'_, F>) -> Array1<F> {
     jacobi_derivative(degree, F::zero(), F::zero(), points)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::array;
+
+    #[test]
+    fn test_legendre_polynomials() {
+        let x = array![-1.0, -0.5, 0.0, 0.5, 1.0];
+
+        let p0 = legendre(0, x.view());
+        let expected_p0 = array![1.0, 1.0, 1.0, 1.0, 1.0];
+        assert_eq!(&p0, &expected_p0);
+
+        let p1 = legendre(1, x.view());
+        let expected_p1 = array![-1.0, -0.5, 0.0, 0.5, 1.0];
+        assert_eq!(&p1, &expected_p1);
+
+        let p2 = legendre(2, x.view());
+        let expected_p2 = array![1.0, -0.125, -0.5, -0.125, 1.0];
+        assert_eq!(&p2, &expected_p2);
+    }
+
+    #[test]
+    fn test_legendre_derivatives() {
+        let x = array![-1.0, -0.5, 0.0, 0.5, 1.0];
+
+        let dp0 = legendre_derivative(0, x.view());
+        let expected_dp0 = array![0.0, 0.0, 0.0, 0.0, 0.0];
+        assert_eq!(&dp0, &expected_dp0);
+
+        let dp1 = legendre_derivative(1, x.view());
+        let expected_dp1 = array![1.0, 1.0, 1.0, 1.0, 1.0];
+        assert_eq!(&dp1, &expected_dp1);
+
+        let dp2 = legendre_derivative(2, x.view());
+        let expected_dp2 = array![-3.0, -1.5, 0.0, 1.5, 3.0];
+        assert_eq!(&dp2, &expected_dp2);
+    }
+
+    #[test]
+    fn test_jacobi_polynomials() {
+        let x = array![-1.0, -0.5, 0.0, 0.5, 1.0];
+        let alpha = 1.0;
+        let beta = 2.0;
+
+        let p1 = jacobi(1, alpha, beta, x.view());
+        let expected_p1 = array![-3.0, -1.75, -0.5, 0.75, 2.0];
+        assert_eq!(&p1, &expected_p1);
+        
+        let dp1 = jacobi_derivative(1, alpha, beta, x.view());
+        let expected_dp1 = array![2.5, 2.5, 2.5, 2.5, 2.5];
+        assert_eq!(&dp1, &expected_dp1);
+    }
+
+    #[test]
+    fn test_jacobi_endpoints() {
+        let x = array![-1.0, 1.0];
+        let alpha = 1.0;
+        let beta = 2.0;
+
+        let p2 = jacobi(2, alpha, beta, x.view());
+        let expected_p2 = array![6.0, 3.0];
+        assert_eq!(&p2, &expected_p2);
+    }
+}
