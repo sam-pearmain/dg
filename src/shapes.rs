@@ -29,43 +29,43 @@ where
 /// A line
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Line<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// A triangle
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Tri<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// A quadrilateral
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quad<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// A tetrahedron
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Tet<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// A hexahedron
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Hex<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// A prism
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pri<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// A pyramid
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pyr<F: Float> {
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 /// The definition of a face. The indices are in reference to the shape of which it is a face
@@ -83,6 +83,25 @@ pub enum Face<F: Float> {
         indices: [usize; 4],
         normal: Array1<F>,
     },
+}
+
+impl<F: Float> Face<F> {
+    fn n_points_from_order(&self, order: usize) -> usize {
+        match &self {
+            Self::Line {
+                indices: _,
+                normal: _,
+            } => order + 1,
+            Self::Tri {
+                indices: _,
+                normal: _,
+            } => (order + 1) * (order + 2) / 2,
+            Self::Quad {
+                indices: _,
+                normal: _,
+            } => (order + 1).pow(2),
+        }
+    }
 }
 
 impl<F: Float> Dimensioned for Line<F> {

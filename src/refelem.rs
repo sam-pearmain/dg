@@ -1,41 +1,51 @@
 use std::marker::PhantomData;
 
-use num::Float;
+use ndarray::Array2;
 
-use crate::shapes::{Dimensioned, Shapes};
+use crate::float::Float;
+use crate::operators::Operators;
+use crate::shapes::{Hex, Line, Pyr, Quad, Shape, Tet, Tri};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ReferenceElement<F: Float> {
-    shape: Shapes,
-    order: usize,
-    _marker: PhantomData<F>,
+/// The reference element trait
+pub trait ReferenceElement<F: Float>: Operators<F> {
+    /// The solution points
+    fn solution_points(&self) -> Array2<F>;
+    /// The flux points
+    fn flux_points(&self) -> Array2<F>;
 }
 
-impl<F: Float> Dimensioned for ReferenceElement<F> {
-    fn dimensions(&self) -> usize {
-        self.shape.dimensions()
-    }
+pub struct ReferenceShape<F: Float, S: Shape<F>> {
+    pub order: usize,
+    _marker: PhantomData<(F, S)>,
 }
 
-impl<F: Float> ReferenceElement<F> {
-    fn new(shape: Shapes, order: usize) -> Self {
+/// A reference line
+#[allow(type_alias_bounds)]
+pub type ReferenceLine<F: Float> = ReferenceShape<F, Line<F>>;
+/// A reference triangle
+#[allow(type_alias_bounds)]
+pub type ReferenceTri<F: Float> = ReferenceShape<F, Tri<F>>;
+/// A reference quadrilateral
+#[allow(type_alias_bounds)]
+pub type ReferenceQuad<F: Float> = ReferenceShape<F, Quad<F>>;
+/// A reference tetrahedron
+#[allow(type_alias_bounds)]
+pub type ReferenceTet<F: Float> = ReferenceShape<F, Tet<F>>;
+/// A reference hexahedron
+#[allow(type_alias_bounds)]
+pub type ReferenceHex<F: Float> = ReferenceShape<F, Hex<F>>;
+/// A reference prism
+#[allow(type_alias_bounds)]
+pub type ReferencePri<F: Float> = ReferenceShape<F, Tet<F>>;
+/// A reference pyramid
+#[allow(type_alias_bounds)]
+pub type ReferencePyr<F: Float> = ReferenceShape<F, Pyr<F>>;
+
+impl<F: Float, S: Shape<F>> ReferenceShape<F, S> {
+    fn new(order: usize) -> Self {
         Self {
-            shape,
             order,
             _marker: PhantomData,
-        }
-    }
-
-    /// The number of solution points
-    fn n_solution_points(&self) -> usize {
-        match self.shape {
-            Shape::Line => self.order + 1,
-            Shape::Triangle => (self.order + 1) * (self.order + 2) / 2,
-            Shape::Quadrilateral => (self.order + 1) * (self.order + 1),
-            Shape::Tetrahedron => (self.order + 1) * (self.order + 2) * (self.order + 3) / 6,
-            Shape::Hexahedron => (self.order + 1) * (self.order + 1) * (self.order + 1),
-            Shape::Prism => (self.order + 1) * (self.order + 1) * (self.order + 2) / 2,
-            Shape::Pyramid => (self.order + 1) * (self.order + 2) * (2 * self.order + 3) / 6,
         }
     }
 }
