@@ -8,10 +8,14 @@ use crate::shapes::{Hex, Line, Pyr, Quad, Shape, Tet, Tri};
 
 /// The reference element trait
 pub trait ReferenceElement<F: Float>: Operators<F> {
+    type Shape: Shape<F>;
+    
     /// The solution points
     fn solution_points(&self) -> Array2<F>;
     /// The flux points
     fn flux_points(&self) -> Array2<F>;
+    /// The quadrature points
+    fn quadrature_points(&self) -> Array2<F>;
 }
 
 pub struct ReferenceShape<F: Float, S: Shape<F>> {

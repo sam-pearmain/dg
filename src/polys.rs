@@ -75,13 +75,13 @@ pub fn jacobi_derivative<F: Float>(n: usize, alpha: F, beta: F, x: ArrayView1<'_
 
 /// Computes the Legendre polynomial $P_n(x)$.
 /// These polynomials are orthogonal on the interval [-1, 1] with weight functions $w(x) = 1$
-pub fn legendre<F: Float>(degree: usize, points: ArrayView1<'_, F>) -> Array1<F> {
-    jacobi(degree, F::zero(), F::zero(), points)
+pub fn legendre<F: Float>(n: usize, x: ArrayView1<'_, F>) -> Array1<F> {
+    jacobi(n, F::zero(), F::zero(), x)
 }
 
 /// Computes the derivative of the Legendre polynomial $\frac{d}{dx} P_n(x)$
-pub fn legendre_derivative<F: Float>(degree: usize, points: ArrayView1<'_, F>) -> Array1<F> {
-    jacobi_derivative(degree, F::zero(), F::zero(), points)
+pub fn legendre_derivative<F: Float>(n: usize, x: ArrayView1<'_, F>) -> Array1<F> {
+    jacobi_derivative(n, F::zero(), F::zero(), x)
 }
 
 #[cfg(test)]
@@ -132,7 +132,7 @@ mod tests {
         let p1 = jacobi(1, alpha, beta, x.view());
         let expected_p1 = array![-3.0, -1.75, -0.5, 0.75, 2.0];
         assert_eq!(&p1, &expected_p1);
-        
+
         let dp1 = jacobi_derivative(1, alpha, beta, x.view());
         let expected_dp1 = array![2.5, 2.5, 2.5, 2.5, 2.5];
         assert_eq!(&dp1, &expected_dp1);
