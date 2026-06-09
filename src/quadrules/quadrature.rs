@@ -5,7 +5,7 @@ use ndarray::{Array1, Array2};
 
 use crate::{
     float::Float,
-    shapes::{Hex, Line, Quad, Shape, Tet, Tri},
+    shapes::{Hex, Line, Pri, Pyr, Quad, Shape, Tet, Tri},
 };
 
 pub trait QuadratureDegree {
@@ -42,7 +42,9 @@ quadrature_families!(
     WilliamsShunn,
     ShunnHam,
     Witherden,
-    WitherdenVincent
+    WitherdenVincent, 
+    AlphaOptGaussLegendreLobatto,
+    WilliamsShunnGaussLegendreLobatto
 );
 
 #[derive(Debug, Clone)]
@@ -54,42 +56,56 @@ pub enum QuadratureKind {
     ShunnHam(ShunnHam),
     Witherden(Witherden),
     WitherdenVincent(WitherdenVincent),
+    AlphaOptGaussLegendreLobatto(AlphaOptGaussLegendreLobatto),
+    WilliamsShunnGaussLegendreLobatto(WilliamsShunnGaussLegendreLobatto)
 }
 
 /// A marker trait for valid combinations of shapes with quadrature rules
 pub trait ValidQuadratureRule<F: Float, S: Shape<F>>: QuadratureFamily {}
 
 macro_rules! valid_quadrature {
-    ($rule:ty, $shape:ty) => {
-        impl<F: Float> ValidQuadratureRule<F, $shape> for $rule {}
+    ($rule:ident, $shape:ident) => {
+        impl<F: Float> ValidQuadratureRule<F, $shape<F>> for $rule {}
     };
 }
 
 // lines
-valid_quadrature!(GaussLegendreLobatto, Line<F>);
-valid_quadrature!(GaussLegendre, Line<F>);
+valid_quadrature!(GaussLegendreLobatto, Line);
+valid_quadrature!(GaussLegendre, Line);
 
 // triangles
-valid_quadrature!(AlphaOpt, Tri<F>);
-valid_quadrature!(WilliamsShunn, Tri<F>);
-valid_quadrature!(WitherdenVincent, Tri<F>);
+valid_quadrature!(AlphaOpt, Tri);
+valid_quadrature!(WilliamsShunn, Tri);
+valid_quadrature!(WitherdenVincent, Tri);
 
 // quadrilaterals
-valid_quadrature!(GaussLegendreLobatto, Quad<F>);
-valid_quadrature!(GaussLegendre, Quad<F>);
-valid_quadrature!(WitherdenVincent, Quad<F>);
+valid_quadrature!(GaussLegendreLobatto, Quad);
+valid_quadrature!(GaussLegendre, Quad);
+valid_quadrature!(WitherdenVincent, Quad);
 
 // tetrahedrons
-valid_quadrature!(AlphaOpt, Tet<F>);
-valid_quadrature!(ShunnHam, Tet<F>);
-valid_quadrature!(Witherden, Tet<F>);
-valid_quadrature!(WitherdenVincent, Tet<F>);
+valid_quadrature!(AlphaOpt, Tet);
+valid_quadrature!(ShunnHam, Tet);
+valid_quadrature!(Witherden, Tet);
+valid_quadrature!(WitherdenVincent, Tet);
 
 // hexahedrons
-valid_quadrature!(GaussLegendreLobatto, Hex<F>);
-valid_quadrature!(GaussLegendre, Hex<F>);
-valid_quadrature!(Witherden, Hex<F>);
-valid_quadrature!(WitherdenVincent, Hex<F>);
+valid_quadrature!(GaussLegendreLobatto, Hex);
+valid_quadrature!(GaussLegendre, Hex);
+valid_quadrature!(Witherden, Hex);
+valid_quadrature!(WitherdenVincent, Hex);
+
+// prisms
+valid_quadrature!(AlphaOptGaussLegendreLobatto, Pri);
+valid_quadrature!(WilliamsShunnGaussLegendreLobatto, Pri);
+valid_quadrature!(Witherden, Pri);
+valid_quadrature!(WitherdenVincent, Pri);
+
+// pyramids
+valid_quadrature!(GaussLegendreLobatto, Pyr);
+valid_quadrature!(GaussLegendre, Pyr);
+valid_quadrature!(Witherden, Pyr);
+valid_quadrature!(WitherdenVincent, Pyr);
 
 #[macro_export]
 macro_rules! quadrule_impl {
@@ -154,11 +170,11 @@ where
 impl<F: Float + 'static> dyn QuadratureRule<F> {
     pub fn line(rule: QuadratureKind, degree: usize) -> Result<Box<Self>> {
         match rule {
-            QuadratureKind::GaussLegendreLobatto(_) => {
-                todo!()
+            QuadratureKind::GaussLegendreLobatto(_) => match degree {
+                _ => todo!()
             }
-            QuadratureKind::GaussLegendre(_) => {
-                todo!()
+            QuadratureKind::GaussLegendre(_) => match degree {
+                _ => todo!()
             }
             _ => Err(anyhow!(format!("{rule:?} unsupported over line elements"))),
         }
