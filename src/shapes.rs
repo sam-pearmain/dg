@@ -28,6 +28,17 @@ where
     }
 }
 
+/// An enum for the shapes
+pub enum ShapeKind<F: Float> {
+    Line(Line<F>),
+    Tri(Tri<F>),
+    Quad(Quad<F>),
+    Tet(Tet<F>),
+    Hex(Hex<F>),
+    Pri(Pri<F>),
+    Pyr(Pyr<F>),
+}
+
 /// A line
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Line<F: Float> {
