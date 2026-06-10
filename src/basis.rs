@@ -72,8 +72,8 @@ pub struct BasisCache<F: Float> {
 
 /// todo
 pub struct CachedShapeBasis<F: Float, S: Shape<F>> {
+    basis: ShapeBasis<F, S>,
     cache: BasisCache<F>,
-    _marker: PhantomData<(F, S)>,
 }
 
 /// The line basis

@@ -8,13 +8,16 @@ use crate::{
     shapes::{Hex, Line, Pri, Pyr, Quad, Shape, Tet, Tri},
 };
 
-pub trait QuadratureDegree {
-    /// The degree of accuracy for the specific quadrature rule
+/// The quadrature metadata
+pub trait Quadrature {
+    /// The degree of accuracy
     fn degree(&self) -> usize;
+    /// The number of quadrature points
+    fn num_quadrature_points(&self) -> usize;
 }
 
-/// The top-level quadrature rule trait
-pub trait QuadratureRule<F: Float>: QuadratureDegree {
+/// The top-level quadrature trait
+pub trait QuadratureRule<F: Float>: Quadrature {
     /// The quadrature points
     fn points(&self) -> Array2<F>;
     /// The quadrature weights
@@ -112,7 +115,7 @@ valid_quadrature!(WitherdenVincent, Pyr);
 
 #[macro_export]
 macro_rules! quadrule_impl {
-    ($alias:ident, points: $pts:tt, weights: $wts:tt) => {
+    ($alias:ident, points: $pts:tt, weights: $wts:tt) => {        
         impl<F: $crate::float::Float> $crate::quadrules::quadrature::QuadratureRule<F>
             for $alias<F>
         {
@@ -163,7 +166,7 @@ where
     }
 }
 
-impl<F, S, R, const D: usize, const N: usize> QuadratureDegree for ShapeQuadrature<F, S, R, D, N>
+impl<F, S, R, const D: usize, const N: usize> Quadrature for ShapeQuadrature<F, S, R, D, N>
 where
     F: Float,
     S: Shape<F>,
@@ -171,6 +174,10 @@ where
 {
     fn degree(&self) -> usize {
         D
+    }
+    
+    fn num_quadrature_points(&self) -> usize {
+        N
     }
 }
 
