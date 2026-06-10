@@ -21,6 +21,9 @@ pub trait QuadratureRule<F: Float>: QuadratureDegree {
     fn weights(&self) -> Option<Array1<F>>;
 }
 
+/// A marker for tensor-product quadrature rules
+pub trait TensorProductQuadratureRule {}
+
 /// A marker trait for quadrature family
 pub trait QuadratureFamily {}
 
@@ -42,7 +45,7 @@ quadrature_families!(
     WilliamsShunn,
     ShunnHam,
     Witherden,
-    WitherdenVincent, 
+    WitherdenVincent,
     AlphaOptGaussLegendreLobatto,
     WilliamsShunnGaussLegendreLobatto
 );
@@ -57,7 +60,7 @@ pub enum QuadratureKind {
     Witherden(Witherden),
     WitherdenVincent(WitherdenVincent),
     AlphaOptGaussLegendreLobatto(AlphaOptGaussLegendreLobatto),
-    WilliamsShunnGaussLegendreLobatto(WilliamsShunnGaussLegendreLobatto)
+    WilliamsShunnGaussLegendreLobatto(WilliamsShunnGaussLegendreLobatto),
 }
 
 /// A marker trait for valid combinations of shapes with quadrature rules
@@ -110,7 +113,9 @@ valid_quadrature!(WitherdenVincent, Pyr);
 #[macro_export]
 macro_rules! quadrule_impl {
     ($alias:ident, points: $pts:tt, weights: $wts:tt) => {
-        impl<F: $crate::float::Float> $crate::quadrules::quadrature::QuadratureRule<F> for $alias<F> {
+        impl<F: $crate::float::Float> $crate::quadrules::quadrature::QuadratureRule<F>
+            for $alias<F>
+        {
             fn points(&self) -> ::ndarray::Array2<F> {
                 $crate::arrayf!(F, $pts)
             }
@@ -121,7 +126,9 @@ macro_rules! quadrule_impl {
         }
     };
     ($alias:ident, points: $pts:tt, weights: None) => {
-        impl<F: $crate::float::Float> $crate::quadrules::quadrature::QuadratureRule<F> for $alias<F> {
+        impl<F: $crate::float::Float> $crate::quadrules::quadrature::QuadratureRule<F>
+            for $alias<F>
+        {
             fn points(&self) -> ::ndarray::Array2<F> {
                 $crate::arrayf!(F, $pts)
             }
@@ -171,11 +178,11 @@ impl<F: Float + 'static> dyn QuadratureRule<F> {
     pub fn line(rule: QuadratureKind, degree: usize) -> Result<Box<Self>> {
         match rule {
             QuadratureKind::GaussLegendreLobatto(_) => match degree {
-                _ => todo!()
-            }
+                _ => todo!(),
+            },
             QuadratureKind::GaussLegendre(_) => match degree {
-                _ => todo!()
-            }
+                _ => todo!(),
+            },
             _ => Err(anyhow!(format!("{rule:?} unsupported over line elements"))),
         }
     }

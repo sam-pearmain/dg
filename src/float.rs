@@ -33,7 +33,7 @@ pub trait Float: NumTraitsFloat + Lapack + Scalar + DeviceRepr {
 
 impl Float for f32 {
     const C_TYPE_STRING: &'static str = "float";
-    
+
     #[inline(always)]
     fn from_f64(val: f64) -> Self {
         val as f32
@@ -42,7 +42,7 @@ impl Float for f32 {
 
 impl Float for f64 {
     const C_TYPE_STRING: &'static str = "double";
-    
+
     #[inline(always)]
     fn from_f64(val: f64) -> Self {
         val
