@@ -1,62 +1,9 @@
-use crate::{
-    quadrule_impl,
-    quadrules::quadrature::{GaussLegendre, GaussLegendreLobatto, ShapeQuadrature},
-    shapes::Line,
-};
-
-/// A Gauss-Legendre-Lobatto line
-pub type GaussLegendreLobattoLine<F, const D: usize, const N: usize> =
-    ShapeQuadrature<F, Line<F>, GaussLegendreLobatto, D, N>;
-
-/// A Gauss-Legendre line
-pub type GaussLegendreLine<F, const D: usize, const N: usize> =
-    ShapeQuadrature<F, Line<F>, GaussLegendre, D, N>;
-
-// gauss-legendre-lobatto line aliases
-pub type GaussLegendreLobattoLineD1N2<F> = GaussLegendreLobattoLine<F, 1, 2>;
-pub type GaussLegendreLobattoLineD3N3<F> = GaussLegendreLobattoLine<F, 3, 3>;
-pub type GaussLegendreLobattoLineD5N4<F> = GaussLegendreLobattoLine<F, 5, 4>;
-pub type GaussLegendreLobattoLineD7N5<F> = GaussLegendreLobattoLine<F, 7, 5>;
-pub type GaussLegendreLobattoLineD9N6<F> = GaussLegendreLobattoLine<F, 9, 6>;
-pub type GaussLegendreLobattoLineD11N7<F> = GaussLegendreLobattoLine<F, 11, 7>;
-pub type GaussLegendreLobattoLineD13N8<F> = GaussLegendreLobattoLine<F, 13, 8>;
-pub type GaussLegendreLobattoLineD15N9<F> = GaussLegendreLobattoLine<F, 15, 9>;
-pub type GaussLegendreLobattoLineD17N10<F> = GaussLegendreLobattoLine<F, 17, 10>;
-pub type GaussLegendreLobattoLineD19N11<F> = GaussLegendreLobattoLine<F, 17, 11>;
-pub type GaussLegendreLobattoLineD21N12<F> = GaussLegendreLobattoLine<F, 21, 12>;
-pub type GaussLegendreLobattoLineD23N13<F> = GaussLegendreLobattoLine<F, 23, 13>;
-pub type GaussLegendreLobattoLineD25N14<F> = GaussLegendreLobattoLine<F, 25, 14>;
-pub type GaussLegendreLobattoLineD27N15<F> = GaussLegendreLobattoLine<F, 27, 15>;
-pub type GaussLegendreLobattoLineD29N16<F> = GaussLegendreLobattoLine<F, 29, 16>;
-pub type GaussLegendreLobattoLineD31N17<F> = GaussLegendreLobattoLine<F, 31, 17>;
-pub type GaussLegendreLobattoLineD33N18<F> = GaussLegendreLobattoLine<F, 33, 18>;
-pub type GaussLegendreLobattoLineD35N19<F> = GaussLegendreLobattoLine<F, 35, 19>;
-pub type GaussLegendreLobattoLineD37N20<F> = GaussLegendreLobattoLine<F, 37, 20>;
-
-// gauss-legendre line aliases
-pub type GaussLegendreLineD1N1<F> = GaussLegendreLine<F, 1, 1>;
-pub type GaussLegendreLineD3N2<F> = GaussLegendreLine<F, 3, 2>;
-pub type GaussLegendreLineD5N3<F> = GaussLegendreLine<F, 5, 3>;
-pub type GaussLegendreLineD7N4<F> = GaussLegendreLine<F, 7, 4>;
-pub type GaussLegendreLineD9N5<F> = GaussLegendreLine<F, 9, 5>;
-pub type GaussLegendreLineD11N6<F> = GaussLegendreLine<F, 11, 6>;
-pub type GaussLegendreLineD13N7<F> = GaussLegendreLine<F, 13, 7>;
-pub type GaussLegendreLineD15N8<F> = GaussLegendreLine<F, 15, 8>;
-pub type GaussLegendreLineD17N9<F> = GaussLegendreLine<F, 17, 9>;
-pub type GaussLegendreLineD19N10<F> = GaussLegendreLine<F, 19, 10>;
-pub type GaussLegendreLineD21N11<F> = GaussLegendreLine<F, 21, 11>;
-pub type GaussLegendreLineD23N12<F> = GaussLegendreLine<F, 23, 12>;
-pub type GaussLegendreLineD25N13<F> = GaussLegendreLine<F, 25, 13>;
-pub type GaussLegendreLineD27N14<F> = GaussLegendreLine<F, 27, 14>;
-pub type GaussLegendreLineD29N15<F> = GaussLegendreLine<F, 29, 15>;
-pub type GaussLegendreLineD31N16<F> = GaussLegendreLine<F, 31, 16>;
-pub type GaussLegendreLineD33N17<F> = GaussLegendreLine<F, 33, 17>;
-pub type GaussLegendreLineD35N18<F> = GaussLegendreLine<F, 35, 18>;
-pub type GaussLegendreLineD37N19<F> = GaussLegendreLine<F, 37, 19>;
-pub type GaussLegendreLineD39N20<F> = GaussLegendreLine<F, 39, 20>;
+use crate::quadrule_impl;
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD1N2,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 1,
     points:
     [
         [-1.0],
@@ -70,7 +17,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD3N3,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 3,
     points:
     [
         [-1.0],
@@ -86,7 +35,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD5N4,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 5,
     points:
     [
         [-1.0],
@@ -103,7 +54,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD7N5,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 7,
     points:
     [
         [-1.0],
@@ -123,7 +76,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD9N6,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 9,
     points:
     [
         [-1.0],
@@ -145,7 +100,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD11N7,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 11,
     points:
     [
         [-1.0],
@@ -169,7 +126,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD13N8,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 13,
     points:
     [
         [-1.0],
@@ -195,7 +154,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD15N9,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 15,
     points:
     [
         [-1.0],
@@ -223,7 +184,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD17N10,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 17,
     points:
     [
         [-1.0],
@@ -253,7 +216,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD19N11,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 19,
     points:
     [
         [-1.0],
@@ -285,7 +250,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD21N12,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 21,
     points:
     [
         [-1.0],
@@ -319,7 +286,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD23N13,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 23,
     points:
     [
         [-1.0],
@@ -355,7 +324,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD25N14,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 25,
     points:
     [
         [-1.0],
@@ -393,7 +364,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD27N15,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 27,
     points:
     [
         [-1.0],
@@ -433,7 +406,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD29N16,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 29,
     points:
     [
         [-1.0],
@@ -475,7 +450,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD31N17,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 31,
     points:
     [
         [-1.0],
@@ -519,7 +496,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD33N18,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 33,
     points:
     [
         [-1.0],
@@ -565,7 +544,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD35N19,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 35,
     points:
     [
         [-1.0],
@@ -613,7 +594,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLobattoLineD37N20,
+    rule: GaussLegendreLobatto,
+    shape: Line,
+    degree: 37,
     points:
     [
         [-1.0],
@@ -663,7 +646,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD1N1,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 1,
     points:
     [
         [0.0]
@@ -675,7 +660,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD3N2,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 3,
     points:
     [
         [-0.577350269189625764509148780502],
@@ -689,7 +676,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD5N3,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 5,
     points:
     [
         [-0.774596669241483377035853079956],
@@ -705,7 +694,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD7N4,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 7,
     points:
     [
         [-0.861136311594052575223946488893],
@@ -723,7 +714,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD9N5,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 9,
     points:
     [
         [-0.906179845938663992797626878299],
@@ -743,7 +736,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD11N6,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 11,
     points:
     [
         [-0.932469514203152027812301554494],
@@ -765,7 +760,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD13N7,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 13,
     points:
     [
         [-0.949107912342758524526189684048],
@@ -789,7 +786,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD15N8,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 15,
     points:
     [
         [-0.960289856497536231683560868569],
@@ -815,7 +814,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD17N9,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 17,
     points:
     [
         [-0.968160239507626089835576202904],
@@ -843,7 +844,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD19N10,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 19,
     points:
     [
         [-0.973906528517171720077964012084],
@@ -873,7 +876,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD21N11,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 21,
     points:
     [
         [-0.978228658146056992803938001123],
@@ -905,7 +910,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD23N12,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 23,
     points:
     [
         [-0.981560634246719250690549090149],
@@ -939,7 +946,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD25N13,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 25,
     points:
     [
         [-0.984183054718588149472829448807],
@@ -975,7 +984,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD27N14,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 27,
     points:
     [
         [-0.986283808696812338841597266704],
@@ -1013,7 +1024,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD29N15,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 29,
     points:
     [
         [-0.987992518020485428489565718587],
@@ -1053,7 +1066,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD31N16,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 31,
     points:
     [
         [-0.98940093499164993259615417345],
@@ -1095,7 +1110,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD33N17,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 33,
     points:
     [
         [-0.990575475314417335675434019941],
@@ -1139,7 +1156,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD35N18,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 35,
     points:
     [
         [-0.991565168420930946730016004706],
@@ -1185,7 +1204,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD37N19,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 37,
     points:
     [
         [-0.992406843843584403189017670253],
@@ -1233,7 +1254,9 @@ quadrule_impl!(
 );
 
 quadrule_impl!(
-    GaussLegendreLineD39N20,
+    rule: GaussLegendre,
+    shape: Line,
+    degree: 39,
     points:
     [
         [-0.993128599185094924786122388471],

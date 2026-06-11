@@ -29,14 +29,15 @@ where
 }
 
 /// An enum for the shapes
-pub enum ShapeKind<F: Float> {
-    Line(Line<F>),
-    Tri(Tri<F>),
-    Quad(Quad<F>),
-    Tet(Tet<F>),
-    Hex(Hex<F>),
-    Pri(Pri<F>),
-    Pyr(Pyr<F>),
+#[derive(Debug, Clone, Copy)]
+pub enum ShapeFamily {
+    Line,
+    Tri,
+    Quad,
+    Tet,
+    Hex,
+    Pri,
+    Pyr,
 }
 
 /// A line
