@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::OnceLock};
 
 use anyhow::{Result, anyhow};
 use ndarray::{Array1, Array2};
@@ -8,7 +8,7 @@ use crate::{
     shapes::{Hex, Line, Pri, Pyr, Quad, Shape, Tet, Tri},
 };
 
-/// The quadrature metadata
+/// The quadrature
 pub trait Quadrature {
     /// The degree of accuracy
     fn degree(&self) -> usize;
@@ -180,6 +180,38 @@ where
         N
     }
 }
+
+pub struct CachedShapeQuadrature<F: Float, S: Shape<F>, R: ValidQuadratureRule<F, S>, const D: usize, const N: usize> {
+    points: OnceLock<Array2<F>>, 
+    weights: OnceLock<Option<Array1<F>>>,
+    quadrule: Box<dyn QuadratureRule<F>>,
+    _marker: PhantomData<(F, S, R)>,
+}
+
+impl<F, S, R, const D: usize, const N: usize> Quadrature for CachedShapeQuadrature<F, S, R, D, N>
+where
+    F: Float,
+    S: Shape<F>,
+    R: ValidQuadratureRule<F, S>
+{
+    fn degree(&self) -> usize {
+        self.quadrule.degree()
+    }
+
+    fn num_quadrature_points(&self) -> usize {
+        self.quadrule.num_quadrature_points()
+    }
+}
+
+impl<F: Float, S: Shape<F>, R: ValidQuadratureRule<F, S>, const D: usize, const N: usize> QuadratureRule<F> for CachedShapeQuadrature<F, S, R, D, N> {
+    fn points(&self) -> Array2<F> {
+        self.points.get_or_init(|| self.quadrule.points()).clone()
+    }
+
+    fn weights(&self) -> Option<Array1<F>> {
+        self.weights.get_or_init(|| self.quadrule.weights()).clone()
+    }
+} 
 
 impl<F: Float + 'static> dyn QuadratureRule<F> {
     pub fn line(rule: QuadratureKind, degree: usize) -> Result<Box<Self>> {
