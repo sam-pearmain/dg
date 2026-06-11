@@ -26,8 +26,8 @@ macro_rules! quadrule_impl {
                     $crate::shapes::ShapeFamily::$shape
                 }
 
-                fn family(&self) -> $crate::quadrules::quadrature::QuadratureFamily {
-                    $crate::quadrules::quadrature::QuadratureFamily::$rule
+                fn family(&self) -> $crate::quadrules::quadrature::QuadratureType {
+                    $crate::quadrules::quadrature::QuadratureType::$rule
                 }
 
                 fn points(&self) -> ::ndarray::ArrayView2<'_, F> {

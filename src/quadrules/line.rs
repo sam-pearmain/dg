@@ -1,4 +1,72 @@
-use crate::quadrule_impl;
+use anyhow::{Result, anyhow};
+
+use crate::{
+    float::Float,
+    quadrule_impl,
+    quadrules::quadrature::{LineQuadrature, QuadratureFactory, QuadratureType, QuadratureRule},
+    shapes::Line,
+};
+
+impl<F: Float> QuadratureFactory<F, Line<F>> for LineQuadrature<F> {
+    fn from_rule_and_degree(
+        rule: QuadratureType,
+        degree: usize,
+    ) -> Result<Box<dyn QuadratureRule<F>>> {
+        match rule {
+            QuadratureType::GaussLegendreLobatto => match degree {
+                0..=1 => Ok(Box::new(GaussLegendreLobattoLineD1::new())),
+                2..=3 => Ok(Box::new(GaussLegendreLobattoLineD3::new())),
+                4..=5 => Ok(Box::new(GaussLegendreLobattoLineD5::new())),
+                6..=7 => Ok(Box::new(GaussLegendreLobattoLineD7::new())),
+                8..=9 => Ok(Box::new(GaussLegendreLobattoLineD9::new())),
+                10..=11 => Ok(Box::new(GaussLegendreLobattoLineD11::new())),
+                12..=13 => Ok(Box::new(GaussLegendreLobattoLineD13::new())),
+                14..=15 => Ok(Box::new(GaussLegendreLobattoLineD15::new())),
+                16..=17 => Ok(Box::new(GaussLegendreLobattoLineD17::new())),
+                18..=19 => Ok(Box::new(GaussLegendreLobattoLineD19::new())),
+                20..=21 => Ok(Box::new(GaussLegendreLobattoLineD21::new())),
+                22..=23 => Ok(Box::new(GaussLegendreLobattoLineD23::new())),
+                24..=25 => Ok(Box::new(GaussLegendreLobattoLineD25::new())),
+                26..=27 => Ok(Box::new(GaussLegendreLobattoLineD27::new())),
+                28..=29 => Ok(Box::new(GaussLegendreLobattoLineD29::new())),
+                30..=31 => Ok(Box::new(GaussLegendreLobattoLineD31::new())),
+                32..=33 => Ok(Box::new(GaussLegendreLobattoLineD33::new())),
+                34..=35 => Ok(Box::new(GaussLegendreLobattoLineD35::new())),
+                36..=37 => Ok(Box::new(GaussLegendreLobattoLineD37::new())),
+                _ => Err(anyhow!(
+                    "no suitable quadrature rule found to satisfy degree of accuracy: {degree:?}\nquadrule: {rule:?}, shape: Line"
+                )),
+            },
+            QuadratureType::GaussLegendre => match degree {
+                0..=1 => Ok(Box::new(GaussLegendreLineD1::new())),
+                2..=3 => Ok(Box::new(GaussLegendreLineD3::new())),
+                4..=5 => Ok(Box::new(GaussLegendreLineD5::new())),
+                6..=7 => Ok(Box::new(GaussLegendreLineD7::new())),
+                8..=9 => Ok(Box::new(GaussLegendreLineD9::new())),
+                10..=11 => Ok(Box::new(GaussLegendreLineD11::new())),
+                12..=13 => Ok(Box::new(GaussLegendreLineD13::new())),
+                14..=15 => Ok(Box::new(GaussLegendreLineD15::new())),
+                16..=17 => Ok(Box::new(GaussLegendreLineD17::new())),
+                18..=19 => Ok(Box::new(GaussLegendreLineD19::new())),
+                20..=21 => Ok(Box::new(GaussLegendreLineD21::new())),
+                22..=23 => Ok(Box::new(GaussLegendreLineD23::new())),
+                24..=25 => Ok(Box::new(GaussLegendreLineD25::new())),
+                26..=27 => Ok(Box::new(GaussLegendreLineD27::new())),
+                28..=29 => Ok(Box::new(GaussLegendreLineD29::new())),
+                30..=31 => Ok(Box::new(GaussLegendreLineD31::new())),
+                32..=33 => Ok(Box::new(GaussLegendreLineD33::new())),
+                34..=35 => Ok(Box::new(GaussLegendreLineD35::new())),
+                36..=37 => Ok(Box::new(GaussLegendreLineD37::new())),
+                _ => Err(anyhow!(
+                    "no suitable quadrature rule found to satisfy degree of accuracy: {degree:?}\nquadrule: {rule:?}, shape: Line"
+                )),
+            },
+            _ => Err(anyhow!(
+                "incompatible quadrature rule and shape combination:\nquadrule: {rule:?}\nshape: Line"
+            )),
+        }
+    }
+}
 
 quadrule_impl!(
     rule: GaussLegendreLobatto,

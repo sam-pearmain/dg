@@ -1,12 +1,11 @@
 use std::marker::PhantomData;
 
-use anyhow::{Ok, Result, anyhow};
+use anyhow::Result;
 use ndarray::{ArrayView1, ArrayView2};
 
 use crate::{
     float::Float,
-    quadrules::line::{GaussLegendreLobattoLineD1, GaussLegendreLobattoLineD3, GaussLegendreLobattoLineD5, GaussLegendreLobattoLineD7, GaussLegendreLobattoLineD9, GaussLegendreLobattoLineD11, GaussLegendreLobattoLineD13, GaussLegendreLobattoLineD15, GaussLegendreLobattoLineD17, GaussLegendreLobattoLineD19, GaussLegendreLobattoLineD21, GaussLegendreLobattoLineD23, GaussLegendreLobattoLineD25, GaussLegendreLobattoLineD27, GaussLegendreLobattoLineD29, GaussLegendreLobattoLineD31, GaussLegendreLobattoLineD33, GaussLegendreLobattoLineD35, GaussLegendreLobattoLineD37},
-    shapes::ShapeFamily,
+    shapes::{Hex, Line, Pri, Pyr, Quad, Shape, ShapeFamily, Tet, Tri},
 };
 
 /// A quadrature rule
@@ -14,7 +13,7 @@ pub trait QuadratureRule<F: Float> {
     /// The shape on which the quadrature is defined
     fn shape(&self) -> ShapeFamily;
     /// The quadrature family
-    fn family(&self) -> QuadratureFamily;
+    fn family(&self) -> QuadratureType;
     /// The quadrature points
     fn points(&self) -> ArrayView2<'_, F>;
     /// The quadrature weights
@@ -27,8 +26,17 @@ pub trait QuadratureRule<F: Float> {
     }
 }
 
+/// A factory trait for quadrature rules for of a given shape
+pub trait QuadratureFactory<F: Float, S: Shape<F>> {
+    /// The quadrature rule constructor
+    fn from_rule_and_degree(
+        rule: QuadratureType,
+        degree: usize,
+    ) -> Result<Box<dyn QuadratureRule<F>>>;
+}
+
 #[derive(Debug, Clone)]
-pub enum QuadratureFamily {
+pub enum QuadratureType {
     GaussLegendreLobatto,
     GaussLegendre,
     WilliamsShunn,
@@ -39,66 +47,17 @@ pub enum QuadratureFamily {
 }
 
 /// The quadrature factory
-pub struct Quadrature<F: Float> {
-    _marker: PhantomData<F>,
+pub struct Quadrature<F: Float, S: Shape<F>> {
+    _marker: PhantomData<(F, S)>,
 }
 
-impl<F: Float> Quadrature<F> {
-    pub fn from_rule_shape_and_degree(rule: QuadratureFamily, shape: ShapeFamily, degree: usize) -> Result<Box<dyn QuadratureRule<F>>> {
-        let incompatible = anyhow!("incompatible quadrature rule and shape combination:\nquadrule: {rule:?}\nshape: {shape:?}");
-        let unsuitable = anyhow!("no suitable quadrature rule found to satisfy degree of accuracy: {degree:?}\nquadrule: {rule:?}, shape: {shape:?}");
-
-        match shape {
-            ShapeFamily::Line => match rule {
-                QuadratureFamily::GaussLegendreLobatto => match degree {
-                    0..=1 => Ok(Box::new(GaussLegendreLobattoLineD1::new())), 
-                    2..=3 => Ok(Box::new(GaussLegendreLobattoLineD3::new())), 
-                    4..=5 => Ok(Box::new(GaussLegendreLobattoLineD5::new())),
-                    6..=7 => Ok(Box::new(GaussLegendreLobattoLineD7::new())),
-                    8..=9 => Ok(Box::new(GaussLegendreLobattoLineD9::new())),
-                    10..=11 => Ok(Box::new(GaussLegendreLobattoLineD11::new())), 
-                    12..=13 => Ok(Box::new(GaussLegendreLobattoLineD13::new())), 
-                    14..=15 => Ok(Box::new(GaussLegendreLobattoLineD15::new())), 
-                    16..=17 => Ok(Box::new(GaussLegendreLobattoLineD17::new())), 
-                    18..=19 => Ok(Box::new(GaussLegendreLobattoLineD19::new())), 
-                    20..=21 => Ok(Box::new(GaussLegendreLobattoLineD21::new())),
-                    22..=23 => Ok(Box::new(GaussLegendreLobattoLineD23::new())),
-                    24..=25 => Ok(Box::new(GaussLegendreLobattoLineD25::new())),
-                    26..=27 => Ok(Box::new(GaussLegendreLobattoLineD27::new())), 
-                    28..=29 => Ok(Box::new(GaussLegendreLobattoLineD29::new())), 
-                    30..=31 => Ok(Box::new(GaussLegendreLobattoLineD31::new())), 
-                    32..=33 => Ok(Box::new(GaussLegendreLobattoLineD33::new())), 
-                    34..=35 => Ok(Box::new(GaussLegendreLobattoLineD35::new())), 
-                    36..=37 => Ok(Box::new(GaussLegendreLobattoLineD37::new())),
-                    _ => Err(unsuitable)
-                }, 
-                QuadratureFamily::GaussLegendre => match degree {
-                    0..=1 => Ok(Box::new(GaussLegendreLineD1::new())), 
-                    2..=3 => Ok(Box::new(GaussLegendreLineD3::new())), 
-                    4..=5 => Ok(Box::new(GaussLegendreLineD5::new())),
-                    6..=7 => Ok(Box::new(GaussLegendreLineD7::new())),
-                    8..=9 => Ok(Box::new(GaussLegendreLineD9::new())),
-                    10..=11 => Ok(Box::new(GaussLegendreLineD11::new())), 
-                    12..=13 => Ok(Box::new(GaussLegendreLineD13::new())), 
-                    14..=15 => Ok(Box::new(GaussLegendreLineD15::new())), 
-                    16..=17 => Ok(Box::new(GaussLegendreLineD17::new())), 
-                    18..=19 => Ok(Box::new(GaussLegendreLineD19::new())), 
-                    20..=21 => Ok(Box::new(GaussLegendreLineD21::new())),
-                    22..=23 => Ok(Box::new(GaussLegendreLineD23::new())),
-                    24..=25 => Ok(Box::new(GaussLegendreLineD25::new())),
-                    26..=27 => Ok(Box::new(GaussLegendreLineD27::new())), 
-                    28..=29 => Ok(Box::new(GaussLegendreLineD29::new())), 
-                    30..=31 => Ok(Box::new(GaussLegendreLineD31::new())), 
-                    32..=33 => Ok(Box::new(GaussLegendreLineD33::new())), 
-                    34..=35 => Ok(Box::new(GaussLegendreLineD35::new())), 
-                    36..=37 => Ok(Box::new(GaussLegendreLineD37::new())),
-                }
-                _ => Err(incompatible)
-            }, 
-            _ => todo!()
-        }
-    }
-}
+pub type LineQuadrature<F> = Quadrature<F, Line<F>>;
+pub type TriQuadrature<F> = Quadrature<F, Tri<F>>;
+pub type QuadQuadrature<F> = Quadrature<F, Quad<F>>;
+pub type TetQuadrature<F> = Quadrature<F, Tet<F>>;
+pub type HexQuadrature<F> = Quadrature<F, Hex<F>>;
+pub type PriQuadrature<F> = Quadrature<F, Pri<F>>;
+pub type PyrQuadrature<F> = Quadrature<F, Pyr<F>>;
 
 #[cfg(test)]
 mod tests {
@@ -106,11 +65,9 @@ mod tests {
 
     #[test]
     fn test() {
-        let quadrule = Quadrature::<f64>::from_rule_shape_and_degree(
-            QuadratureFamily::GaussLegendreLobatto, 
-            ShapeFamily::Line, 
-            2
-        ).unwrap();
+        let quadrule =
+            LineQuadrature::<f64>::from_rule_and_degree(QuadratureType::GaussLegendreLobatto, 38)
+                .unwrap();
         println!("{}", quadrule.points())
     }
 }
