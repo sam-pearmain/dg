@@ -1,25 +1,29 @@
 use std::marker::PhantomData;
+use std::sync::OnceLock;
 
-use ndarray::Array2;
+use ndarray::{Array2, ArrayView2};
 
+use crate::basis::{Basis, LineBasis, QuadBasis};
 use crate::float::Float;
 use crate::operators::Operators;
 use crate::shapes::{Hex, Line, Pyr, Quad, Shape, Tet, Tri};
 
-/// The reference element trait
+/// The reference element
 pub trait ReferenceElement<F: Float>: Operators<F> {
     type Shape: Shape<F>;
 
     /// The solution points
-    fn solution_points(&self) -> Array2<F>;
+    fn solution_points(&self) -> ArrayView2<'_, F>;
     /// The flux points
-    fn flux_points(&self) -> Array2<F>;
+    fn flux_points(&self) -> ArrayView2<'_, F>;
     /// The quadrature points
-    fn quadrature_points(&self) -> Array2<F>;
+    fn quadrature_points(&self) -> ArrayView2<'_, F>;
 }
 
 pub struct ReferenceShape<F: Float, S: Shape<F>> {
     pub order: usize,
+    solution_points: OnceLock<Array2<F>>,
+    flux_points: OnceLock<Array2<F>>,
     _marker: PhantomData<(F, S)>,
 }
 
@@ -44,12 +48,3 @@ pub type ReferencePri<F: Float> = ReferenceShape<F, Tet<F>>;
 /// A reference pyramid
 #[allow(type_alias_bounds)]
 pub type ReferencePyr<F: Float> = ReferenceShape<F, Pyr<F>>;
-
-impl<F: Float, S: Shape<F>> ReferenceShape<F, S> {
-    fn new(order: usize) -> Self {
-        Self {
-            order,
-            _marker: PhantomData,
-        }
-    }
-}

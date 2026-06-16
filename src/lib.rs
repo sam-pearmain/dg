@@ -7,3 +7,4 @@ pub mod polys;
 pub mod quadrules;
 pub mod refelem;
 pub mod shapes;
+pub mod config;

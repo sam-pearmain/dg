@@ -3,7 +3,7 @@ use anyhow::{Result, anyhow};
 use crate::{
     float::Float,
     quadrule_impl,
-    quadrules::quadrature::{LineQuadrature, QuadratureFactory, QuadratureType, QuadratureRule},
+    quadrules::quadrature::{LineQuadrature, QuadratureFactory, QuadratureRule, QuadratureType},
     shapes::Line,
 };
 

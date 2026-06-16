@@ -10,21 +10,21 @@ pub trait Dimensioned {
 }
 
 /// The base level trait defining a shape
-pub trait Shape<F>: Dimensioned
+pub trait Shape<F>: Dimensioned + Sized
 where
     F: Float,
 {
     /// The number of points which define the shape (i.e., the number of corners)
-    fn npoints() -> usize;
+    fn num_points() -> usize;
     /// The number of basis functions (i.e., the number of solution points) for a given order
-    fn nbases_from_order(order: usize) -> usize;
+    fn num_bases_from_order(order: usize) -> usize;
     /// The bounds of the reference shape
     fn bounds() -> Array2<F>;
     /// The faces of the shape
     fn faces() -> Vec<Face<F>>;
     /// The extents of the shape
     fn extents() -> (usize, usize) {
-        (Self::npoints(), Self::ndims())
+        (Self::num_points(), Self::ndims())
     }
 }
 
@@ -161,11 +161,11 @@ impl<F: Float> Dimensioned for Pyr<F> {
 }
 
 impl<F: Float> Shape<F> for Line<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         2
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         order + 1
     }
 
@@ -179,11 +179,11 @@ impl<F: Float> Shape<F> for Line<F> {
 }
 
 impl<F: Float> Shape<F> for Tri<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         3
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         (order + 1) * (order + 2) / 2
     }
 
@@ -214,11 +214,11 @@ impl<F: Float> Shape<F> for Tri<F> {
 }
 
 impl<F: Float> Shape<F> for Quad<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         4
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         (order + 1).pow(2)
     }
 
@@ -254,11 +254,11 @@ impl<F: Float> Shape<F> for Quad<F> {
 }
 
 impl<F: Float> Shape<F> for Tet<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         4
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         (order + 1) * (order + 2) * (order + 3) / 6
     }
 
@@ -294,11 +294,11 @@ impl<F: Float> Shape<F> for Tet<F> {
 }
 
 impl<F: Float> Shape<F> for Hex<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         8
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         (order + 1).pow(3)
     }
 
@@ -346,11 +346,11 @@ impl<F: Float> Shape<F> for Hex<F> {
 }
 
 impl<F: Float> Shape<F> for Pri<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         6
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         (order + 1) * (order + 1) * (order + 2) / 2
     }
 
@@ -392,11 +392,11 @@ impl<F: Float> Shape<F> for Pri<F> {
 }
 
 impl<F: Float> Shape<F> for Pyr<F> {
-    fn npoints() -> usize {
+    fn num_points() -> usize {
         5
     }
 
-    fn nbases_from_order(order: usize) -> usize {
+    fn num_bases_from_order(order: usize) -> usize {
         (order + 1) * (order + 2) * (2 * order + 3) / 6
     }
 

@@ -7,41 +7,44 @@ use crate::float::Float;
 use crate::polys::{legendre, legendre_derivative};
 use crate::shapes::{Dimensioned, Hex, Line, Pri, Pyr, Quad, Shape, Tet, Tri};
 
-pub trait Basis<F>
+pub trait Basis<F>: Sized
 where
     F: Float,
 {
     type Shape: Shape<F>;
     /// The orthonormal basis set at given points (npoints, nmodes)
-    fn orthonormal_basis(order: usize, points: ArrayView2<'_, F>) -> Array2<F>;
+    fn orthonormal_basis(&self, order: usize, points: ArrayView2<'_, F>) -> Array2<F>;
     /// The derivatives of the orthonormal basis at given points (npoints, nmodes, ndims)
-    fn grad_orthonormal_basis(order: usize, points: ArrayView2<'_, F>) -> Array3<F>;
+    fn grad_orthonormal_basis(&self, order: usize, points: ArrayView2<'_, F>) -> Array3<F>;
     /// The Vandermonde matrix at given points (npoints, nmodes)
-    fn vandermonde(order: usize, nodals: ArrayView2<'_, F>) -> Array2<F> {
-        Self::orthonormal_basis(order, nodals)
+    fn vandermonde(&self, order: usize, nodals: ArrayView2<'_, F>) -> Array2<F> {
+        self.orthonormal_basis(order, nodals)
     }
     /// The inverted Vandermonde matrix at given points (npoints, nmodes)
-    fn inverted_vandermonde(order: usize, nodals: ArrayView2<'_, F>) -> Array2<F> {
-        Self::vandermonde(order, nodals)
+    fn inverted_vandermonde(&self, order: usize, nodals: ArrayView2<'_, F>) -> Array2<F> {
+        self.vandermonde(order, nodals)
             .inv()
             .expect("failed vandermonde inversion, check precision and polynomial order")
     }
     /// The nodal basis at given points (npoints, nmodes)
     fn nodal_basis(
+        &self,
         order: usize,
         points: ArrayView2<'_, F>,
         nodals: ArrayView2<'_, F>,
     ) -> Array2<F> {
-        Self::orthonormal_basis(order, points).dot(&Self::inverted_vandermonde(order, nodals))
+        self.orthonormal_basis(order, points)
+            .dot(&self.inverted_vandermonde(order, nodals))
     }
     /// The derivatives of the nodal basis at given points (npoints, nmodes, ndims)
     fn grad_nodal_basis(
+        &self,
         order: usize,
         points: ArrayView2<'_, F>,
         nodals: ArrayView2<'_, F>,
     ) -> Array3<F> {
-        let ortho_dbasis = Self::grad_orthonormal_basis(order, points);
-        let inverted_vandermonde = Self::inverted_vandermonde(order, nodals);
+        let ortho_dbasis = self.grad_orthonormal_basis(order, points);
+        let inverted_vandermonde = self.inverted_vandermonde(order, nodals);
         let mut nodal_dbasis = Array3::zeros((
             ortho_dbasis.shape()[0],
             inverted_vandermonde.shape()[1],
@@ -107,7 +110,7 @@ pub type PyrBasis<F: Float> = ShapeBasis<F, Pyr<F>>;
 impl<F: Float> Basis<F> for LineBasis<F> {
     type Shape = Line<F>;
 
-    fn orthonormal_basis(order: usize, points: ArrayView2<'_, F>) -> Array2<F> {
+    fn orthonormal_basis(&self, order: usize, points: ArrayView2<'_, F>) -> Array2<F> {
         let half = F::from(0.5).unwrap();
         let mut basis = Array2::zeros((points.nrows(), order + 1));
 
@@ -122,7 +125,7 @@ impl<F: Float> Basis<F> for LineBasis<F> {
         basis
     }
 
-    fn grad_orthonormal_basis(order: usize, points: ArrayView2<'_, F>) -> Array3<F> {
+    fn grad_orthonormal_basis(&self, order: usize, points: ArrayView2<'_, F>) -> Array3<F> {
         let half = F::from(0.5).unwrap();
         let mut dbasis = Array3::zeros((points.nrows(), order + 1, Self::Shape::ndims()));
 
@@ -135,5 +138,17 @@ impl<F: Float> Basis<F> for LineBasis<F> {
         }
 
         dbasis
+    }
+}
+
+impl<F: Float> Basis<F> for QuadBasis<F> {
+    type Shape = Quad<F>;
+
+    fn orthonormal_basis(&self, order: usize, points: ArrayView2<'_, F>) -> Array2<F> {
+        todo!()
+    }
+
+    fn grad_orthonormal_basis(&self, order: usize, points: ArrayView2<'_, F>) -> Array3<F> {
+        todo!()
     }
 }
