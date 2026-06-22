@@ -4,8 +4,8 @@ use ndarray::{Array2, Array3, ArrayView2, s};
 use ndarray_linalg::Inverse;
 
 use crate::float::Float;
-use crate::polys::{legendre, legendre_derivative};
-use crate::shapes::{Dimensioned, Hex, Line, Pri, Pyr, Quad, Shape, Tet, Tri};
+use crate::elements::polys::{legendre, legendre_derivative};
+use crate::elements::shapes::{Dimensioned, Hex, Line, Pri, Pyr, Quad, Shape, Tet, Tri};
 
 pub trait Basis<F>: Sized
 where

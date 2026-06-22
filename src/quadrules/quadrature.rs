@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::{
     float::Float,
-    shapes::{Hex, Line, Pri, Pyr, Quad, Shape, ShapeFamily, Tet, Tri},
+    elements::shapes::{Hex, Line, Pri, Pyr, Quad, Shape, ShapeFamily, Tet, Tri},
 };
 
 /// A quadrature rule

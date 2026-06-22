@@ -4,7 +4,7 @@ use crate::{
     float::Float,
     quadrule_impl,
     quadrules::quadrature::{LineQuadrature, QuadratureFactory, QuadratureRule, QuadratureType},
-    shapes::Line,
+    elements::shapes::Line,
 };
 
 impl<F: Float> QuadratureFactory<F, Line<F>> for LineQuadrature<F> {

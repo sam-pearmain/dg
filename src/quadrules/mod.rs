@@ -22,8 +22,8 @@ macro_rules! quadrule_impl {
             impl<F: $crate::float::Float> $crate::quadrules::quadrature::QuadratureRule<F>
                 for [<$rule $shape D $deg>]<F>
             {
-                fn shape(&self) -> $crate::shapes::ShapeFamily {
-                    $crate::shapes::ShapeFamily::$shape
+                fn shape(&self) -> $crate::elements::shapes::ShapeFamily {
+                    $crate::elements::shapes::ShapeFamily::$shape
                 }
 
                 fn family(&self) -> $crate::quadrules::quadrature::QuadratureType {

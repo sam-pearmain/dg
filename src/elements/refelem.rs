@@ -3,10 +3,10 @@ use std::sync::OnceLock;
 
 use ndarray::{Array2, ArrayView2};
 
-use crate::basis::{Basis, LineBasis, QuadBasis};
+use crate::elements::basis::{Basis, LineBasis, QuadBasis};
 use crate::float::Float;
-use crate::operators::Operators;
-use crate::shapes::{Hex, Line, Pyr, Quad, Shape, Tet, Tri};
+use crate::elements::operators::Operators;
+use crate::elements::shapes::{Hex, Line, Pyr, Quad, Shape, Tet, Tri};
 
 /// The reference element
 pub trait ReferenceElement<F: Float>: Operators<F> {

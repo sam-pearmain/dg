@@ -1,6 +1,6 @@
 use ndarray::ArrayView2;
 
-use crate::{basis::Basis, float::Float};
+use crate::{elements::basis::Basis, float::Float};
 
 /// Matrix operators build upon the basis functions
 pub trait Operators<F: Float>: Basis<F> {
