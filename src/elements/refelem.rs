@@ -4,9 +4,9 @@ use std::sync::OnceLock;
 use ndarray::{Array2, ArrayView2};
 
 use crate::elements::basis::{Basis, LineBasis, QuadBasis};
-use crate::float::Float;
 use crate::elements::operators::Operators;
 use crate::elements::shapes::{Hex, Line, Pyr, Quad, Shape, Tet, Tri};
+use crate::float::Float;
 
 /// The reference element
 pub trait ReferenceElement<F: Float>: Operators<F> {

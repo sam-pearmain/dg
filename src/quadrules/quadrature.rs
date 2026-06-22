@@ -5,8 +5,8 @@ use ndarray::{ArrayView1, ArrayView2};
 use serde::Deserialize;
 
 use crate::{
-    float::Float,
     elements::shapes::{Hex, Line, Pri, Pyr, Quad, Shape, ShapeFamily, Tet, Tri},
+    float::Float,
 };
 
 /// A quadrature rule

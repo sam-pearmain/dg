@@ -4,6 +4,7 @@ use anyhow::{Ok, Result, anyhow};
 
 use clap::{Parser, Subcommand};
 use dg::config::Config;
+use serde::Deserialize;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -36,12 +37,11 @@ fn main() -> Result<()> {
     match args.command {
         Commands::Run { mesh, config } => {
             let universe = mpi::initialize().ok_or(anyhow!("failed to initialise mpi"))?;
-            
+
             // read and parse the config file
-            let config_file_contents = fs::read_to_string(config)
+            let config_string = fs::read_to_string(config)
                 .map_err(|e| anyhow!("failed to read config file: {e}"))?;
-            let config: Config = toml::from_str(&config_file_contents)
-                .map_err(|e| anyhow!("{e}"))?;
+            let config: Config = toml::from_str(&config_string).map_err(|e| anyhow!("parse error: {e}"))?;
 
             // construct a dyn system
             

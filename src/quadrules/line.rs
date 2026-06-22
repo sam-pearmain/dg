@@ -1,10 +1,10 @@
 use anyhow::{Result, anyhow};
 
 use crate::{
+    elements::shapes::Line,
     float::Float,
     quadrule_impl,
     quadrules::quadrature::{LineQuadrature, QuadratureFactory, QuadratureRule, QuadratureType},
-    elements::shapes::Line,
 };
 
 impl<F: Float> QuadratureFactory<F, Line<F>> for LineQuadrature<F> {
