@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use anyhow::Result;
 use ndarray::{ArrayView1, ArrayView2};
+use serde::Deserialize;
 
 use crate::{
     float::Float,
@@ -35,7 +36,8 @@ pub trait QuadratureFactory<F: Float, S: Shape<F>> {
     ) -> Result<Box<dyn QuadratureRule<F>>>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
 pub enum QuadratureType {
     GaussLegendreLobatto,
     GaussLegendre,

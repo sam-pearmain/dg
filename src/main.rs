@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Ok, Result, anyhow};
 
@@ -21,7 +21,7 @@ enum Commands {
         #[arg(long)]
         config: PathBuf,
     },
-    /// Launch the auto-config setup environment
+    /// Launch the auto-config setup
     Setup {
         #[arg(long)]
         mesh: PathBuf,
