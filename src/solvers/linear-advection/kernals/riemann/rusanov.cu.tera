@@ -2,7 +2,6 @@ extern "C" __global__ void rusanov(
     const {{ fp_type }}* __restrict__ u_l, 
     const {{ fp_type }}* __restrict__ u_r, 
     const {{ fp_type }}* __restrict__ normals,
-    const {{ fp_type }}* __restrict__ a, 
     {{ fp_type }}* __restrict__ flux_jump_l, 
     {{ fp_type }}* __restrict__ flux_jump_r, 
     int n_interfaces, 
@@ -16,7 +15,7 @@ extern "C" __global__ void rusanov(
 
         {{ fp_type }} a_dot_n = 0.0;
         {% for i in range(end=ndims)%}
-            a_dot_n += a[{{ i }}] * normals[idx * {{ ndims }} + {{ i }}];
+            a_dot_n += {{ a[i] }} * normals[idx * {{ ndims }} + {{ i }}];
         {% endfor %}
 
         {{ fp_type }} normal_flux_l = a_dot_n * u_l[idx];

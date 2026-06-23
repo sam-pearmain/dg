@@ -1,0 +1,19 @@
+// Computes the divergence of the tranformed interior flux
+extern "C" __global__ div_transformed_flux(
+    const {{ fp_type }}* __restrict__ transformed_flux, 
+    {{ fp_type }}* __restrict__ div_transformed_flux, 
+    int n_elements
+) {
+    int element_idx = blockIdx.x;
+    int point_idx = threadIdx.x;
+
+    if (element_idx < n_elements && point_idx < {{ n_points }}) {
+        {{ fp_type }} div = 0.0;
+
+        {% for d in range(end=ndims) %}
+            // do something
+        {% endfor %}
+
+        div_transformed_flux[element_idx * {{ n_points }} + point_idx] = div;
+    }
+}
