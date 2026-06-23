@@ -1,0 +1,38 @@
+// Tranforms the phsyical flux into reference space
+extern "C" __global__ void transform_flux(
+    const {{ fp_type }}* __restrict__ u, 
+    const {{ fp_type }}* __restrict__ a, 
+    const {{ fp_type }}* __restrict__ inv_j, 
+    const {{ fp_type }}* __restrict__ det_j, 
+    {{ fp_type }}* __restrict__ transformed_flux_out, 
+    int n_elements, 
+    int n_points 
+) {
+    int element_idx = blockIdx.x;
+    int point_idx = threadIdx.x;
+
+    if (element_idx < n_elements && point_idx < n_points) {
+        int idx = element_idx * n_points + point_idx;
+        {{ fp_type }} physical_flux[{{ ndims }}];
+        {{ fp_type }} transformed_flux[{{ ndims }}];
+
+        // compute the physical flux 
+        {% for i in range(end=ndims) %}
+            physical_flux[{{ i }}] = a[{{ i }}] * u[idx];
+        {% endfor %}
+
+        // compute the transformed flux 
+        {% for i in range(end=ndims) %}
+            transformed_flux[{{ i }}] = 0.0;
+
+            {% for j in range(end=ndims) %}
+                transformed_flux[{{ i }}] += 
+                    inv_j[idx * {{ ndims * ndims }} + {{ i }} * {{ ndims }} + {{ j }}]
+                    * physical_flux[{{ j }}];
+            {% endfor %}
+
+            // multiply by Jacobian determinant
+            transformed_flux_out[idx * {{ ndims }} + {{ i }}] = det_j[idx] * transformed_flux[{{ i }}];
+        {% endfor %}
+    }
+}

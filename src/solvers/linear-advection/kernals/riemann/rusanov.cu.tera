@@ -1,0 +1,30 @@
+extern "C" __global__ void rusanov(
+    const {{ fp_type }}* __restrict__ u_l, 
+    const {{ fp_type }}* __restrict__ u_r, 
+    const {{ fp_type }}* __restrict__ normals,
+    const {{ fp_type }}* __restrict__ a, 
+    {{ fp_type }}* __restrict__ flux_jump_l, 
+    {{ fp_type }}* __restrict__ flux_jump_r, 
+    int n_interfaces, 
+    int n_points
+) {
+    int interface_idx = blockIdx.x;
+    int point_idx = threadIdx.x;
+
+    if (interface_idx < n_interfaces && point_idx < n_points) {
+        int idx = interface_idx * n_points + point_idx;
+
+        {{ fp_type }} a_dot_n = 0.0;
+        {% for i in range(end=ndims)%}
+            a_dot_n += a[{{ i }}] * normals[idx * {{ ndims }} + {{ i }}];
+        {% endfor %}
+
+        {{ fp_type }} normal_flux_l = a_dot_n * u_l[idx];
+        {{ fp_type }} normal_flux_r = a_dot_n * u_r[idx];
+        {{ fp_type }} lambda_max = fabs(a_dot_n);
+        {{ fp_type }} numerical_flux = 0.5 * (normal_flux_l + normal_flux_r) - 0.5 * lambda_max * (u_r[idx] - u_l[idx]);
+
+        flux_jump_l[idx] = numerical_flux - normal_flux_l;
+        flux_jump_r[idx] = normal_flux_r - numerical_flux;
+    }
+}
